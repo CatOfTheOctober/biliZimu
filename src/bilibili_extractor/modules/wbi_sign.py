@@ -27,11 +27,17 @@ def get_mixin_key(orig: str) -> str:
     """对 imgKey 和 subKey 进行字符顺序打乱编码。
     
     Args:
-        orig: img_key + sub_key 的拼接字符串
+        orig: img_key + sub_key 的拼接字符串（必须至少 64 个字符）
         
     Returns:
         生成的 mixin_key（前 32 位）
+        
+    Raises:
+        ValueError: 输入长度不足 64 个字符
     """
+    if len(orig) < 64:
+        raise ValueError(f"输入长度必须至少 64 个字符，实际为 {len(orig)}")
+    
     return reduce(lambda s, i: s + orig[i], MIXIN_KEY_ENC_TAB, '')[:32]
 
 

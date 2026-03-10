@@ -8,7 +8,6 @@ from bilibili_extractor.core.config import Config
 from bilibili_extractor.core.models import ExtractionResult, VideoInfo
 from bilibili_extractor.core.exceptions import SubtitleNotFoundError
 from bilibili_extractor.modules.url_validator import URLValidator, URLValidationError
-from bilibili_extractor.modules.subtitle_fetcher import SubtitleFetcher
 from bilibili_extractor.modules.video_downloader import VideoDownloader, DownloadError
 from bilibili_extractor.modules.audio_extractor import AudioExtractor, AudioExtractionError
 from bilibili_extractor.modules.asr_engine import ASREngine, FunASREngine, WhisperEngine, ASRError
@@ -33,7 +32,6 @@ class TextExtractor:
         self.logger = Logger("TextExtractor", config.log_level)
         self.resource_manager = ResourceManager(str(config.resolved_temp_dir), config.keep_temp_files)
         self.auth_manager = AuthManager(config)
-        self.subtitle_fetcher = SubtitleFetcher(config)
         self.video_downloader = VideoDownloader(config)
         self.audio_extractor = AudioExtractor()
         self.asr_engine = self._create_asr_engine()
@@ -63,12 +61,12 @@ class TextExtractor:
             return None
 
     def extract(self, url: str, progress_callback: Optional[Callable] = None) -> ExtractionResult:
-        """Extract text from a Bilibili video.
+        """Extract text from a Bilibili video using ASR.
         
-        Implements two-stage processing flow:
-        1. Try BBDown --sub-only to download subtitles
-        2. If no subtitles exist, use BBDown to download full video → extract audio → ASR
-
+        Implements video processing flow:
+        1. Validate URL
+        2. Download full video → extract audio → ASR
+        
         Args:
             url: Bilibili video URL
             progress_callback: Optional callback for progress updates
@@ -86,99 +84,72 @@ class TextExtractor:
         
         try:
             # 1. 验证URL (Requirement 1.1)
-            self.logger.info("Step 1: Validating URL")
+            self.logger.info("Step 1: 验证URL")
             if not URLValidator.validate(url):
                 error_msg = f"Invalid URL: {url}"
                 self.logger.error(error_msg)
                 raise URLValidationError(error_msg)
             
             video_id = URLValidator.extract_video_id(url)
-            self.logger.info(f"Processing video: {video_id}")
+            self.logger.info(f"目标视频: {video_id}")
             
-            # 1.5. Cookie管理和初始化BilibiliAPI
-            self.logger.info("Step 1.5: Checking Cookie")
-            if self.auth_manager.check_cookie():
-                cookie_path = self.auth_manager.get_cookie_path()
-                self.logger.info(f"Cookie found: {cookie_path}")
-                
-                # 读取Cookie内容
-                cookie_content = self.auth_manager.read_cookie_content(cookie_path)
-                
-                # 设置Cookie到SubtitleFetcher
-                self.subtitle_fetcher.set_cookie(cookie_content)
-                self.logger.info("BilibiliAPI initialized with cookie")
-            else:
-                self.logger.info("No cookie found, Bilibili API will not be available")
+            # Check if ASR engine is available
+            if self.asr_engine is None:
+                error_msg = (
+                    f"No ASR engine available for video {video_id}.\n"
+                    f"To use ASR functionality, please install one of the following:\n"
+                    f"  - FunASR (recommended for Chinese): pip install funasr\n"
+                    f"  - Whisper (multilingual): pip install openai-whisper"
+                )
+                self.logger.error(error_msg)
+                raise ASRError(error_msg)
             
-            # 2. 尝试获取字幕（优先Bilibili API）
-            self.logger.info("Step 2: Checking for subtitles")
-            segments = self.subtitle_fetcher.fetch_subtitle(video_id, url)
+            # 2. 下载视频 (Requirement 3.1)
+            self.logger.info("Step 2: 下载视频")
+            video_path = self.video_downloader.download(video_id, progress_callback)
+            self.logger.info(f"视频已下载: {video_path}")
+            self.resource_manager.register_file(video_path)
+            # 3. 提取音频 (Requirement 4.1)
+            self.logger.info("Step 3: 提取音频")
+            audio_path = self.audio_extractor.extract(video_path)
+            self.logger.info(f"音频已提取: {audio_path}")
+            self.resource_manager.register_file(audio_path)
             
-            if segments:
-                self.logger.info(f"Subtitle fetched: {len(segments)} segments")
-                method = "subtitle"
-            else:
-                # 字幕不存在，降级到ASR流程
-                self.logger.info("No subtitles found, proceeding with ASR workflow")
+            # 4. ASR识别 (Requirement 5.1)
+            self.logger.info(f"Step 4: 运行 ASR识别 ({self.config.asr_engine})")
+            try:
+                segments = self.asr_engine.transcribe(audio_path, progress_callback)
+                self.logger.info(f"ASR 识别完成: {len(segments)} segments")
                 
-                # Check if ASR engine is available
-                if self.asr_engine is None:
-                    error_msg = (
-                        f"No subtitles found for video {video_id} and ASR is not available.\n"
-                        f"To use ASR functionality, please install one of the following:\n"
-                        f"  - FunASR (recommended for Chinese): pip install funasr\n"
-                        f"  - Whisper (multilingual): pip install openai-whisper\n"
-                        f"Alternatively, try a video with official subtitles."
-                    )
-                    self.logger.error(error_msg)
-                    raise SubtitleNotFoundError(error_msg)
-                
-                # 3a. 下载视频 (Requirement 3.1)
-                self.logger.info("Step 3: Downloading video")
-                video_path = self.video_downloader.download(video_id, progress_callback)
-                self.logger.info(f"Video downloaded: {video_path}")
-                self.resource_manager.register_file(video_path)
-                
-                # 3b. 提取音频 (Requirement 4.1)
-                self.logger.info("Step 4: Extracting audio")
-                audio_path = self.audio_extractor.extract(video_path)
-                self.logger.info(f"Audio extracted: {audio_path}")
-                self.resource_manager.register_file(audio_path)
-                
-                # 3c. ASR识别 (Requirement 5.1)
-                self.logger.info(f"Step 5: Running ASR ({self.config.asr_engine})")
-                try:
-                    segments = self.asr_engine.transcribe(audio_path, progress_callback)
-                    self.logger.info(f"ASR completed: {len(segments)} segments")
+                # 确保ASR生成的segments的source为'asr'
+                for segment in segments:
+                    segment.source = 'asr'
                     
-                    # 确保ASR生成的segments的source为'asr'
-                    for segment in segments:
-                        segment.source = 'asr'
-                        
-                except FileNotFoundError as e:
-                    # ASR library not installed
-                    error_msg = (
-                        f"ASR library not installed: {str(e)}\n"
-                        f"Please install the required library:\n"
-                        f"  - For FunASR: pip install funasr\n"
-                        f"  - For Whisper: pip install openai-whisper"
-                    )
-                    self.logger.error(error_msg)
-                    raise ASRError(error_msg)
-                
-                method = "asr"
+            except FileNotFoundError as e:
+                # ASR library not installed
+                error_msg = (
+                    f"💔 ASR 本地模型库未安装呐: {str(e)}\n"
+                    f"👉 请手动配置好网络环境后执行安装指令:\n"
+                    f"  - 对于 FunASR 识别引擎 (推荐中文环境): pip install funasr\n"
+                    f"  - 对于 Whisper 引擎 (多语言环境): pip install openai-whisper\n"
+                    f"✨ (温馨提示: 如果遇到网络问题，可以尝试加参数 -i https://pypi.tuna.tsinghua.edu.cn/simple 哟~)"
+                )
+                self.logger.error(error_msg)
+                raise ASRError(error_msg)
             
-            # 4. 计算处理时间 (Requirement 8.2)
+            method = "asr"
+            
+            # 5. 计算处理时间 (Requirement 8.2)
             processing_time = time.time() - start_time
             
-            # 5. 生成结果 (Requirement 7.1)
-            self.logger.info("Step 6: Generating extraction result")
+            # 6. 生成结果 (Requirement 7.1)
+            self.logger.info("Step 5: Generating extraction result")
             result = ExtractionResult(
                 video_info=VideoInfo(
                     video_id=video_id,
                     title="",  # Will be populated in future tasks
                     duration=0,  # Will be populated in future tasks
-                    has_subtitle=method == "subtitle",
+                    has_subtitle=False,
                     url=url
                 ),
                 segments=segments,
@@ -199,7 +170,7 @@ class TextExtractor:
             
             return result
         
-        except (URLValidationError, SubtitleNotFoundError, DownloadError, AudioExtractionError, ASRError):
+        except (URLValidationError, DownloadError, AudioExtractionError, ASRError):
             # Re-raise these exceptions as-is
             raise
         except Exception as e:
@@ -207,8 +178,8 @@ class TextExtractor:
             self.logger.error(f"Unexpected error during extraction: {str(e)}", exc_info=True)
             raise
         finally:
-            # 6. 清理资源 (Requirement 9.1)
-            self.logger.info("Step 7: Cleaning up resources")
+            # 7. 清理资源 (Requirement 9.1)
+            self.logger.info("Step 6: Cleaning up resources")
             self.resource_manager.cleanup()
             self.logger.close()
 
