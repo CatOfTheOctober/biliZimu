@@ -27,7 +27,7 @@ class TestBilibiliAPI412Detection:
         config = Config()
         return BilibiliAPI(cookie=None, config=config)
     
-    @patch('src.bilibili_extractor.modules.bilibili_api.get_wbi_keys')
+    @patch('src.bilibili_extractor.modules.wbi_sign.get_wbi_keys')
     def test_412_error_raises_risk_control_error(self, mock_get_wbi_keys, api_instance):
         """测试 HTTP 412 响应抛出 RiskControlError。
         
@@ -51,7 +51,7 @@ class TestBilibiliAPI412Detection:
             assert "123456" in str(error)
             assert "789012" in str(error)
     
-    @patch('src.bilibili_extractor.modules.bilibili_api.get_wbi_keys')
+    @patch('src.bilibili_extractor.modules.wbi_sign.get_wbi_keys')
     def test_412_error_exception_attributes(self, mock_get_wbi_keys, api_instance):
         """测试 RiskControlError 异常包含必要的属性。
         
@@ -78,7 +78,7 @@ class TestBilibiliAPI412Detection:
             assert error.suggested_wait_time == 20
             assert "player/wbi/v2" in error.request_url
     
-    @patch('src.bilibili_extractor.modules.bilibili_api.get_wbi_keys')
+    @patch('src.bilibili_extractor.modules.wbi_sign.get_wbi_keys')
     def test_412_error_logging_warning_level(self, mock_get_wbi_keys, api_instance, caplog):
         """测试 412 错误使用 WARNING 级别记录日志。
         
@@ -104,7 +104,7 @@ class TestBilibiliAPI412Detection:
         log_messages = [record.message for record in warning_logs]
         assert any("412" in msg for msg in log_messages)
     
-    @patch('src.bilibili_extractor.modules.bilibili_api.get_wbi_keys')
+    @patch('src.bilibili_extractor.modules.wbi_sign.get_wbi_keys')
     def test_412_error_logging_includes_url(self, mock_get_wbi_keys, api_instance, caplog):
         """测试 412 错误日志包含请求 URL。
         
@@ -126,7 +126,7 @@ class TestBilibiliAPI412Detection:
         log_messages = [record.message for record in caplog.records]
         assert any("player/wbi/v2" in msg for msg in log_messages)
     
-    @patch('src.bilibili_extractor.modules.bilibili_api.get_wbi_keys')
+    @patch('src.bilibili_extractor.modules.wbi_sign.get_wbi_keys')
     def test_412_error_logging_includes_video_id(self, mock_get_wbi_keys, api_instance, caplog):
         """测试 412 错误日志包含视频 ID。
         
@@ -149,7 +149,7 @@ class TestBilibiliAPI412Detection:
         assert any("123456" in msg for msg in log_messages)
         assert any("789012" in msg for msg in log_messages)
     
-    @patch('src.bilibili_extractor.modules.bilibili_api.get_wbi_keys')
+    @patch('src.bilibili_extractor.modules.wbi_sign.get_wbi_keys')
     def test_412_error_not_caught_by_retry_decorator(self, mock_get_wbi_keys, api_instance):
         """测试 RiskControlError 不被 @retry_on_error 装饰器捕获。
         
@@ -174,7 +174,7 @@ class TestBilibiliAPI412Detection:
         # 应该只调用一次，不应该重试
         assert call_count == 1
     
-    @patch('src.bilibili_extractor.modules.bilibili_api.get_wbi_keys')
+    @patch('src.bilibili_extractor.modules.wbi_sign.get_wbi_keys')
     def test_non_412_error_not_risk_control_error(self, mock_get_wbi_keys, api_instance):
         """测试非 412 错误不抛出 RiskControlError。
         
@@ -194,7 +194,7 @@ class TestBilibiliAPI412Detection:
             # 不应该是 RiskControlError
             assert not isinstance(exc_info.value, RiskControlError)
     
-    @patch('src.bilibili_extractor.modules.bilibili_api.get_wbi_keys')
+    @patch('src.bilibili_extractor.modules.wbi_sign.get_wbi_keys')
     def test_412_error_with_wbi_signature(self, mock_get_wbi_keys, api_instance):
         """测试带 WBI 签名的请求也能检测 412 错误。
         
@@ -207,11 +207,11 @@ class TestBilibiliAPI412Detection:
         mock_response.status_code = 412
         
         with patch.object(api_instance.session, 'get', return_value=mock_response):
-            with patch('src.bilibili_extractor.modules.bilibili_api.encode_wbi', return_value={'aid': 123456, 'cid': 789012}):
+            with patch('src.bilibili_extractor.modules.wbi_sign.encode_wbi', return_value={'aid': 123456, 'cid': 789012}):
                 with pytest.raises(RiskControlError):
                     api_instance.get_player_info(aid=123456, cid=789012)
     
-    @patch('src.bilibili_extractor.modules.bilibili_api.get_wbi_keys')
+    @patch('src.bilibili_extractor.modules.wbi_sign.get_wbi_keys')
     def test_412_error_fallback_to_v2_api(self, mock_get_wbi_keys, api_instance):
         """测试 412 错误后不会自动降级到 V2 API。
         
@@ -252,7 +252,7 @@ class TestBilibiliAPI412EdgeCases:
         config = Config()
         return BilibiliAPI(cookie=None, config=config)
     
-    @patch('src.bilibili_extractor.modules.bilibili_api.get_wbi_keys')
+    @patch('src.bilibili_extractor.modules.wbi_sign.get_wbi_keys')
     def test_412_with_different_aid_cid(self, mock_get_wbi_keys, api_instance):
         """测试不同的 aid/cid 组合都能检测 412。"""
         mock_get_wbi_keys.return_value = None
@@ -275,7 +275,7 @@ class TestBilibiliAPI412EdgeCases:
                 assert str(aid) in error.video_id
                 assert str(cid) in error.video_id
     
-    @patch('src.bilibili_extractor.modules.bilibili_api.get_wbi_keys')
+    @patch('src.bilibili_extractor.modules.wbi_sign.get_wbi_keys')
     def test_412_error_message_format(self, mock_get_wbi_keys, api_instance):
         """测试 412 错误消息格式。"""
         mock_get_wbi_keys.return_value = None
@@ -294,7 +294,7 @@ class TestBilibiliAPI412EdgeCases:
             assert "412" in error_message
             assert "Risk control" in error_message or "风控" in error_message
     
-    @patch('src.bilibili_extractor.modules.bilibili_api.get_wbi_keys')
+    @patch('src.bilibili_extractor.modules.wbi_sign.get_wbi_keys')
     def test_412_error_request_url_in_exception(self, mock_get_wbi_keys, api_instance):
         """测试 412 错误异常包含完整的请求 URL。
         

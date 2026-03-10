@@ -296,7 +296,7 @@ class TestConfigLoaderValidateConfig:
             result = ConfigLoader.validate_config(config)
         
         assert result is True
-        assert config.output_format == "srt"  # Reset to default
+        assert config.output_format == "txt"  # Reset to default
         assert "Invalid output_format" in caplog.text
 
     def test_validate_invalid_download_threads_zero(self, caplog):
@@ -339,7 +339,7 @@ class TestConfigLoaderValidateConfig:
         assert config.log_level == "INFO"
         assert config.video_quality == "720P"
         assert config.asr_engine == "funasr"
-        assert config.output_format == "srt"
+        assert config.output_format == "txt"
         assert config.download_threads == 4
         
         # Should have multiple warnings

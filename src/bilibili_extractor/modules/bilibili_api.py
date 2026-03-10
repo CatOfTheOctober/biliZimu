@@ -214,9 +214,6 @@ class BilibiliAPI:
         # 速率限制器（使用配置的请求间隔）
         request_interval = config.api_request_interval if config else 20
         self._rate_limiter = RateLimiter(min_interval=request_interval)
-        
-        # WBI签名器
-        self._wbi_signer = WbiSigner()
     
     def clear_cache(self) -> None:
         """清除所有缓存。
@@ -239,69 +236,6 @@ class BilibiliAPI:
         """
         return f"{prefix}:{'_'.join(str(arg) for arg in args)}"
     
-    @retry_on_error(max_retries=3, backoff_factor=0.5)
-    def _get_wbi_keys(self) -> Tuple[str, str]:
-        """获取WBI签名所需的img_key和sub_key。
-        
-        通过导航API获取wbi_img的img_url和sub_url，
-        从中提取img_key和sub_key。
-        
-        Returns:
-            (img_key, sub_key) 元组
-            
-        Raises:
-            BilibiliAPIError: API调用失败
-        """
-        from ..core.exceptions import BilibiliAPIError
-        
-        # 速率限制
-        self._rate_limiter.wait_if_needed()
-        
-        # 调用导航API
-        url = "https://api.bilibili.com/x/web-interface/nav"
-        
-        try:
-            self.logger.debug(f"Fetching WBI keys from nav API")
-            response = self.session.get(url, timeout=self.timeout)
-            response.raise_for_status()
-            
-            data = response.json()
-            
-            # 检查API响应
-            if data.get('code') != 0:
-                error_msg = data.get('message', 'Unknown error')
-                raise BilibiliAPIError(f"Nav API error: {error_msg}")
-            
-            # 提取wbi_img信息
-            wbi_img = data.get('data', {}).get('wbi_img', {})
-            img_url = wbi_img.get('img_url', '')
-            sub_url = wbi_img.get('sub_url', '')
-            
-            # 从URL中提取key（文件名去掉扩展名）
-            # 例如: https://i0.hdslb.com/bfs/wbi/7cd084941338484aae1ad9425b84077c.png
-            # 提取: 7cd084941338484aae1ad9425b84077c
-            img_key = img_url.rsplit('/', 1)[-1].split('.')[0] if img_url else ''
-            sub_key = sub_url.rsplit('/', 1)[-1].split('.')[0] if sub_url else ''
-            
-            if not img_key or not sub_key:
-                raise BilibiliAPIError("Failed to extract WBI keys from nav API")
-            
-            self.logger.debug(f"WBI keys retrieved: img_key={img_key[:8]}..., sub_key={sub_key[:8]}...")
-            return img_key, sub_key
-            
-        except requests.RequestException as e:
-            raise BilibiliAPIError(f"Failed to fetch WBI keys: {e}")
-    
-    def _ensure_wbi_keys(self) -> None:
-        """确保WBI密钥可用且未过期。
-        
-        如果密钥不存在或已过期，则重新获取。
-        """
-        if self._wbi_signer.is_keys_expired():
-            self.logger.debug("WBI keys expired or not set, fetching new keys...")
-            img_key, sub_key = self._get_wbi_keys()
-            self._wbi_signer.update_keys(img_key, sub_key)
-
     @retry_on_error(max_retries=3, backoff_factor=0.5)
     def get_video_info(self, bvid: str, page: int = 1) -> Dict[str, Any]:
         """获取视频信息。
