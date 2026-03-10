@@ -519,7 +519,7 @@ class SubtitleFetcher:
             SubtitleNotFoundError: If no subtitles are found
         """
         # Create temporary directory for downloads
-        temp_dir = Path(self.config.temp_dir)
+        temp_dir = self.config.resolved_temp_dir
         temp_dir.mkdir(parents=True, exist_ok=True)
         
         # Create a unique subdirectory for this download

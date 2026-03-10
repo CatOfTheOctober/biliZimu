@@ -50,6 +50,55 @@ class Config:
     api_retry_max_attempts: int = 3  # API 重试最大次数
     api_retry_wait_time: int = 20  # API 重试等待时间（秒）
     
+    # 内部存储解析后的路径
+    _resolved_temp_dir: Optional[Path] = None
+    _resolved_output_dir: Optional[Path] = None
+    
+    def __post_init__(self):
+        """初始化后处理，解析路径。"""
+        # 延迟导入以避免循环导入
+        from ..utils.tool_finder import ToolFinder
+        
+        # 解析临时目录路径
+        temp_path = Path(self.temp_dir)
+        if not temp_path.is_absolute():
+            tool_finder = ToolFinder()
+            project_root = tool_finder.get_project_root()
+            self._resolved_temp_dir = project_root / self.temp_dir
+        else:
+            self._resolved_temp_dir = temp_path
+        
+        # 解析输出目录路径
+        output_path = Path(self.output_dir)
+        if not output_path.is_absolute():
+            tool_finder = ToolFinder()
+            project_root = tool_finder.get_project_root()
+            self._resolved_output_dir = project_root / self.output_dir
+        else:
+            self._resolved_output_dir = output_path
+    
+    @property
+    def resolved_temp_dir(self) -> Path:
+        """获取解析后的临时目录路径。
+        
+        Returns:
+            解析后的临时目录路径
+        """
+        if self._resolved_temp_dir is None:
+            self.__post_init__()
+        return self._resolved_temp_dir
+    
+    @property
+    def resolved_output_dir(self) -> Path:
+        """获取解析后的输出目录路径。
+        
+        Returns:
+            解析后的输出目录路径
+        """
+        if self._resolved_output_dir is None:
+            self.__post_init__()
+        return self._resolved_output_dir
+    
     def resolve_path(self, path: str) -> Path:
         """解析路径，相对路径相对于项目根目录。
         

@@ -46,14 +46,9 @@ output/
 *.cookie
 
 # Tools and external binaries
-tools/BBDown/BBDown.data
-tools/BBDown/qrcode.png
-tools/ffmpeg/
+
 
 # Config files (keep examples)
-config/config.yaml
-!config/example_config.yaml
-!config/default_config.yaml
 
 # OS
 .DS_Store

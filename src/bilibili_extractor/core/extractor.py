@@ -31,7 +31,7 @@ class TextExtractor:
         """
         self.config = config
         self.logger = Logger("TextExtractor", config.log_level)
-        self.resource_manager = ResourceManager(config.temp_dir, config.keep_temp_files)
+        self.resource_manager = ResourceManager(str(config.resolved_temp_dir), config.keep_temp_files)
         self.auth_manager = AuthManager(config)
         self.subtitle_fetcher = SubtitleFetcher(config)
         self.video_downloader = VideoDownloader(config)

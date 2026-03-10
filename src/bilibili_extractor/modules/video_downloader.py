@@ -71,7 +71,7 @@ class VideoDownloader:
             FileNotFoundError: If BBDown is not installed
         """
         # Create temp directory
-        temp_dir = Path(self.config.temp_dir)
+        temp_dir = self.config.resolved_temp_dir
         temp_dir.mkdir(parents=True, exist_ok=True)
         
         # Construct video URL
