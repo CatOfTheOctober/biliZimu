@@ -1,0 +1,4 @@
+# file: D:\Kiro_proj\Test1\src\bilibili_extractor\utils\logger.py
+# hypothesis_version: 6.151.9
+
+['%Y-%m-%d %H:%M:%S', 'INFO', 'utf-8']

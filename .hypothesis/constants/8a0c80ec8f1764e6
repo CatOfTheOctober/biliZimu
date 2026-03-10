@@ -1,0 +1,4 @@
+# file: D:\Kiro_proj\Test1\src\bilibili_extractor\modules\asr_engine.py
+# hypothesis_version: 6.151.9
+
+[0.0, 1.0, 5.0, 10.0, 15.0, 90.0, 100.0, 1000.0, 300, 'asr', 'base', 'cpu', 'ct-punc', 'end', 'fp16', 'fsmn-vad', 'language', 'paraformer-zh', 'segments', 'start', 'text', 'timestamp', 'verbose']

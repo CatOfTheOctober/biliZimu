@@ -1,0 +1,4 @@
+# file: D:\Kiro_proj\Test1\src\bilibili_extractor\modules\video_downloader.py
+# hypothesis_version: 6.151.9
+
+[0.0, 100.0, '(\\d+\\.?\\d*)%', '--cookie', '--work-dir', '-mt', '-q', '.avi', '.flv', '.mkv', '.mp4', '1080P', '1080P60', '116', '120', '32', '480P', '4K', '64', '720P', '80', 'BBDown', 'replace', 'utf-8']

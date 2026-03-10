@@ -1,0 +1,4 @@
+# file: D:\Kiro_proj\Test1\src\bilibili_extractor\core\config.py
+# hypothesis_version: 6.151.9
+
+['./output', './temp', '1080P', '480P', '720P', 'DEBUG', 'ERROR', 'INFO', 'WARNING', 'asr_engine', 'base', 'cookie', 'cookie_file', 'download_threads', 'enable_ocr', 'format', 'funasr', 'funasr_model', 'json', 'keep_temp', 'keep_temp_files', 'language', 'large', 'log_level', 'markdown', 'medium', 'ocr_engine', 'output_dir', 'output_format', 'paddleocr', 'paraformer-zh', 'r', 'small', 'srt', 'temp_dir', 'tesseract', 'tiny', 'txt', 'utf-8', 'video_quality', 'whisper', 'whisper_model']

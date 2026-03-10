@@ -1,0 +1,4 @@
+# file: D:\Kiro_proj\Test1\src\bilibili_extractor\cli.py
+# hypothesis_version: 6.151.9
+
+[3600, '\n✓ Login successful!', '#', '--asr-engine', '--batch', '--check-cookie', '--config', '--cookie', '--enable-ocr', '--format', '--funasr-model', '--keep-temp', '--language', '--log-level', '--login', '--no-auto-login', '--output', '--output-dir', '--temp-dir', '--use-int8', '--use-onnx', '--version', '--video-quality', '--whisper-model', '-f', '-o', '1080P', '480P', '720P', '=', '=== BBDown Login ===', '?', 'Bilibili video URL', 'CODE', 'DEBUG', 'DIR', 'ERROR', 'FILE', 'INFO', 'Output file path', 'SESSDATA=', 'WARNING', '__main__', 'base', 'funasr', 'json', 'large', 'login_type', 'markdown', 'medium', 'r', 'small', 'srt', 'store_true', 'subtitle', 'tiny', 'txt', 'url', 'utf-8', 'version', 'w', 'web', 'whisper']

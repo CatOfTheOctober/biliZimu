@@ -1,0 +1,4 @@
+# file: D:\Kiro_proj\Test1\src\bilibili_extractor\modules\subtitle_fetcher.py
+# hypothesis_version: 6.151.9
+
+[1.0, 1000.0, 3600, '--cookie', '--sub-only', '--work-dir', './/s', '.json', '.srt', '.xml', 'BBDown', '[\\u4e00-\\u9fff]', '\\n\\s*\\n', 'ai-', 'aid', 'body', 'cid', 'content', 'from', 'lan', 'no subtitle', 'replace', 'subtitle', 'subtitle.*not.*found', 'subtitle_url', 'subtitles', 'to', 'utf-8', 'zh', 'zh(?![-_])', 'zh-CN', 'zh-Hans', 'zh[-_]?cn', 'zh[-_]?hans', '不存在字幕', '中文', '字幕.*不存在', '无字幕', '简体']

@@ -1,0 +1,9 @@
+# Include core requirements
+-r requirements.txt
+
+# Development dependencies
+pytest>=7.4.0
+pytest-cov>=4.1.0
+hypothesis>=6.82.0
+black>=23.7.0
+mypy>=1.4.0

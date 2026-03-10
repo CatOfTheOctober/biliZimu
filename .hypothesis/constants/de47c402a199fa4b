@@ -1,0 +1,4 @@
+# file: D:\Kiro_proj\Test1\src\bilibili_extractor\modules\bilibili_api.py
+# hypothesis_version: 6.151.9
+
+[0.0, 0.3, 0.5, 1.0, 2.0, -101, 100, 429, 500, 502, 503, 504, 3600, '/', '//', 'Cookie', 'Referer', 'Unknown error', 'User-Agent', 'aid', 'bvid', 'cid', 'code', 'data', 'duration', 'http://', 'https:', 'https://', 'message', 'pic', 'player_info', 'subtitle', 'subtitle_data', 'subtitle_url', 'subtitles', 'title', 'video_info']

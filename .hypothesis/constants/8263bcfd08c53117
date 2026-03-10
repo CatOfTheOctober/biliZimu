@@ -1,0 +1,4 @@
+# file: D:\Kiro_proj\Test1\src\bilibili_extractor\core\extractor.py
+# hypothesis_version: 6.151.9
+
+['TextExtractor', 'asr', 'asr_engine', 'extraction_method', 'segment_count', 'subtitle', 'use_int8', 'use_onnx', 'whisper']

@@ -1,0 +1,4 @@
+# file: D:\Kiro_proj\Test1\src\bilibili_extractor\modules\audio_extractor.py
+# hypothesis_version: 6.151.9
+
+['-ac', '-ar', '-i', '-of', '-show_entries', '-v', '-vn', '-y', '1', '16000', 'duration', 'error', 'ffmpeg', 'ffprobe', 'format', 'format=duration', 'json', 'replace', 'utf-8']

@@ -1,0 +1,4 @@
+# file: D:\Kiro_proj\Test1\src\bilibili_extractor\cli.py
+# hypothesis_version: 6.151.9
+
+[3600, '#', '--asr-engine', '--batch', '--config', '--cookie', '--enable-ocr', '--format', '--funasr-model', '--keep-temp', '--language', '--log-level', '--output', '--output-dir', '--temp-dir', '--use-int8', '--use-onnx', '--version', '--video-quality', '--whisper-model', '-f', '-o', '1080P', '480P', '720P', '=', '?', 'Bilibili video URL', 'CODE', 'DEBUG', 'DIR', 'ERROR', 'FILE', 'INFO', 'Output file path', 'WARNING', '__main__', 'base', 'funasr', 'json', 'large', 'markdown', 'medium', 'r', 'small', 'srt', 'store_true', 'tiny', 'txt', 'url', 'utf-8', 'version', 'w', 'whisper']

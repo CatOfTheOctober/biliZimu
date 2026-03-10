@@ -1,0 +1,1720 @@
+<!doctype html>
+<html lang="zh-CN">
+  <head>
+    <meta charset="UTF-8" />
+    <meta
+      name="viewport"
+      content="width=device-width, initial-scale=1.0"
+    />
+    <title>SubBatch - B站字幕批量下载工具</title>
+    <style>
+      body {
+        margin: 0;
+        padding: 16px;
+        font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
+        background-color: #f7f8f9;
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        min-height: 100vh;
+        overflow-x: hidden;
+      }
+
+      /* 添加旋转动画 */
+      @keyframes spin {
+        0% {
+          transform: rotate(0deg);
+        }
+        100% {
+          transform: rotate(360deg);
+        }
+      }
+
+      .spin {
+        animation: spin 1.5s linear infinite;
+      }
+
+      .input-container {
+        width: 90%;
+        /* max-width: 400px; */
+        background: white;
+        padding: 20px;
+        border-radius: 12px;
+        box-shadow: 0 4px 16px rgba(0, 0, 0, 0.08);
+        transition: box-shadow 0.3s ease;
+      }
+
+      .input-container:hover {
+        box-shadow: 0 6px 20px rgba(0, 0, 0, 0.12);
+      }
+
+      .input-row {
+        display: flex;
+        align-items: center;
+        gap: 12px;
+        margin-bottom: 12px;
+        padding-right: 1px;
+      }
+
+      .input-label {
+        display: block;
+        color: #333;
+        font-size: 14px;
+        font-weight: 500;
+        white-space: nowrap;
+        min-width: 80px;
+      }
+
+      .input-wrapper {
+        position: relative;
+        display: flex;
+        align-items: center;
+        flex: 1;
+      }
+
+      .input-field {
+        width: 100%;
+        padding: 10px 32px 10px 12px;
+        border: 1px solid #e0e0e0;
+        border-radius: 6px;
+        font-size: 14px;
+        color: #333;
+        box-sizing: border-box;
+        transition: all 0.3s ease;
+      }
+
+      .input-field:focus {
+        outline: none;
+        border-color: #3370ff;
+        box-shadow: 0 0 0 3px rgba(51, 112, 255, 0.1);
+      }
+
+      .input-field::placeholder {
+        color: #999;
+      }
+
+      .clear-btn {
+        position: absolute;
+        right: 8px;
+        background: none;
+        border: none;
+        padding: 4px;
+        cursor: pointer;
+        color: #999;
+        display: none;
+        align-items: center;
+        justify-content: center;
+        opacity: 0.7;
+        transition: opacity 0.3s;
+      }
+
+      .input-field:focus + .clear-btn,
+      .input-wrapper:hover .clear-btn {
+        display: flex;
+      }
+
+      .clear-btn:hover {
+        opacity: 1;
+      }
+
+      .clear-btn svg {
+        width: 16px;
+        height: 16px;
+        fill: currentColor;
+      }
+
+      .get-url-btn {
+        width: 100%;
+        max-width: 400px;
+        margin-bottom: 16px;
+        padding: 10px 20px;
+        background-color: #3370ff;
+        color: white;
+        border: none;
+        border-radius: 8px;
+        font-size: 14px;
+        font-weight: 500;
+        cursor: pointer;
+        transition: all 0.3s ease;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        gap: 8px;
+        box-shadow: 0 2px 8px rgba(51, 112, 255, 0.2);
+      }
+
+      .get-url-btn:hover {
+        background-color: #2860e1;
+        transform: translateY(-1px);
+        box-shadow: 0 4px 12px rgba(51, 112, 255, 0.3);
+      }
+
+      .get-url-btn:active {
+        transform: translateY(1px);
+      }
+
+      .get-url-btn svg {
+        width: 20px;
+        min-width: 20px;
+        height: 16px;
+        fill: currentColor;
+      }
+
+      .get-collect-btn {
+        width: 100%;
+        max-width: 400px;
+        margin-bottom: 16px;
+        padding: 10px 20px;
+        background-color: #3370ff;
+
+        color: white;
+        border: none;
+        border-radius: 8px;
+        font-size: 14px;
+        font-weight: 500;
+        cursor: pointer;
+        transition: all 0.3s ease;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        gap: 8px;
+        box-shadow: 0 2px 8px rgba(249, 179, 8, 0.3); /* 阴影也改为匹配黄色 */
+      }
+
+      .help:hover {
+        transform: translateY(-1px);
+      }
+
+      .help:active {
+        transform: translateY(1px);
+      }
+
+      .get-collect-btn:hover {
+        transform: translateY(-1px);
+      }
+
+      .get-collect-btn:active {
+        transform: translateY(1px);
+      }
+
+      .get-collect-btn svg {
+        width: 20px;
+        min-width: 20px;
+        height: 16px;
+        fill: currentColor;
+      }
+
+      .button-group {
+        margin-top: 12px;
+        display: flex;
+        gap: 12px;
+      }
+
+      .action-btn {
+        flex: 1;
+        padding: 10px 20px;
+        border: none;
+        border-radius: 6px;
+        font-size: 14px;
+        font-weight: 500;
+        cursor: pointer;
+        transition: all 0.3s ease;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        gap: 8px;
+      }
+
+      .primary-btn {
+        background-color: #3370ff;
+        color: white;
+        box-shadow: 0 2px 8px rgba(51, 112, 255, 0.2);
+      }
+
+      .primary-btn:hover {
+        background-color: #2860e1;
+        transform: translateY(-1px);
+        box-shadow: 0 4px 12px rgba(51, 112, 255, 0.3);
+      }
+
+      .secondary-btn {
+        background-color: #f0f2f5;
+        color: #333;
+      }
+
+      .secondary-btn:hover {
+        background-color: #e4e6e8;
+        transform: translateY(-1px);
+      }
+
+      .action-btn:active {
+        transform: translateY(1px);
+      }
+
+      .action-btn svg {
+        width: 20px;
+        height: 20px;
+        min-width: 20px;
+        min-height: 20px;
+        fill: currentColor;
+      }
+
+      .action-btn.hidden {
+        display: none;
+      }
+
+      .preview-copy-group {
+        display: none;
+      }
+
+      .preview-copy-group.show {
+        display: flex;
+      }
+
+      .sponsor-container {
+        width: 95%;
+        /* max-width: 400px; */
+        margin-bottom: 12px;
+        display: flex;
+        gap: 12px;
+      }
+
+      .sponsor-btn {
+        flex: 1;
+        padding: 8px 16px;
+        background: linear-gradient(to right, #ffd75e, #ffcd38);
+        color: #333;
+        border: none;
+        border-radius: 8px;
+        font-size: 14px;
+        font-weight: 500;
+        cursor: pointer;
+        transition: all 0.3s ease;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        gap: 8px;
+        box-shadow: 0 2px 8px rgba(255, 215, 94, 0.3);
+        transform-origin: center;
+      }
+
+      .sponsor-btn:hover {
+        background: linear-gradient(to right, #ffcd38, #ffc107);
+        transform: scale(1.06);
+        box-shadow: 0 4px 12px rgba(255, 215, 94, 0.4);
+      }
+
+      .sponsor-btn:active {
+        transform: scale(1.1) translateY(1px);
+        box-shadow: 0 2px 4px rgba(255, 215, 94, 0.2);
+      }
+
+      .follow-btn {
+        flex: 1;
+        padding: 8px 16px;
+        background: linear-gradient(to right, #e36a64, #e36a64);
+        color: white;
+        border: none;
+        border-radius: 8px;
+        font-size: 14px;
+        font-weight: 500;
+        cursor: pointer;
+        transition: all 0.3s ease;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        gap: 8px;
+        box-shadow: 0 2px 8px rgba(255, 77, 156, 0.3);
+      }
+
+      .follow-btn:hover {
+        background: linear-gradient(to right, #e36a64, #e36a64);
+        transform: scale(1.06);
+        box-shadow: 0 4px 12px rgba(255, 77, 156, 0.4);
+      }
+
+      .follow-btn:active {
+        transform: scale(1.1) translateY(1px);
+      }
+
+      .sponsor-btn svg,
+      .follow-btn svg {
+        width: 16px;
+        height: 16px;
+        fill: currentColor;
+      }
+
+      .error-toast,
+      .success-toast {
+        position: fixed;
+        top: 35%;
+        left: 50%;
+        transform: translate(-50%, -50%) scale(0.8);
+        background-color: #fff;
+        color: #333;
+        padding: 16px 20px;
+        border-radius: 8px;
+        box-shadow: 0 6px 20px rgba(0, 0, 0, 0.2);
+        display: flex;
+        align-items: center;
+        gap: 12px;
+        transition: all 0.3s ease;
+        z-index: 1002;
+        min-width: 280px;
+        max-width: 400px;
+        opacity: 0;
+        visibility: hidden;
+      }
+
+      .error-toast.show,
+      .success-toast.show {
+        transform: translate(-50%, -50%) scale(1);
+        opacity: 1;
+        visibility: visible;
+      }
+
+      .error-toast-icon {
+        color: #ff4d4f;
+        width: 24px;
+        height: 24px;
+        min-width: 24px;
+      }
+
+      .success-toast-icon {
+        color: #52c41a;
+        width: 24px;
+        height: 24px;
+        min-width: 24px;
+      }
+
+      .error-toast-message,
+      .success-toast-message {
+        flex: 1;
+        font-size: 14px;
+      }
+
+      .error-toast-close,
+      .success-toast-close {
+        background: none;
+        border: none;
+        cursor: pointer;
+        color: #999;
+        padding: 4px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+      }
+
+      .error-toast-close:hover,
+      .success-toast-close:hover {
+        color: #666;
+      }
+
+      .error-toast-close svg,
+      .success-toast-close svg {
+        width: 16px;
+        height: 16px;
+        fill: currentColor;
+      }
+
+      .section-divider {
+        width: 100%;
+        height: 1px;
+        background-color: #eee;
+        margin: 16px 0;
+      }
+
+      /* 视频标题区域样式 */
+      .video-title-container {
+        margin-top: 16px;
+        padding: 12px;
+        background-color: #f8f9fa;
+        border-radius: 8px;
+        width: 100%;
+      }
+
+      .video-title-header {
+        font-size: 14px;
+        font-weight: 500;
+        color: #666;
+        margin-bottom: 8px;
+      }
+
+      .video-title {
+        font-size: 14px;
+        color: #333;
+        word-break: break-word;
+        line-height: 1.5;
+        padding: 8px 10px;
+        background: white;
+        border-radius: 6px;
+        border: 1px solid #e8e8e8;
+      }
+
+      .video-info-container {
+        margin-top: 8px;
+        padding: 8px;
+        background-color: #f0f0f0;
+        border-radius: 6px;
+      }
+
+      .video-info-row {
+        display: flex;
+        align-items: center;
+        margin-bottom: 4px;
+      }
+
+      .video-info-label {
+        font-weight: 500;
+        margin-right: 8px;
+      }
+
+      .video-info-value {
+        color: #666;
+      }
+
+      /* 获取字幕按钮 */
+      .get-subtitle-btn {
+        margin-top: 10px;
+        padding: 6px 12px;
+        background-color: #3370ff;
+        color: white;
+        border: none;
+        border-radius: 4px;
+        font-size: 13px;
+        cursor: pointer;
+        transition: all 0.3s ease;
+      }
+
+      .get-subtitle-btn:hover {
+        background-color: #2860e1;
+      }
+
+      /* 字幕区域样式 */
+      .subtitle-container {
+        margin-top: 16px;
+        padding: 12px;
+        background-color: #f8f9fa;
+        border-radius: 8px;
+        width: 100%;
+      }
+
+      .subtitle-header {
+        display: flex;
+        justify-content: space-between;
+        font-size: 14px;
+        font-weight: 500;
+        color: #666;
+        margin-bottom: 8px;
+      }
+
+      .subtitle-status {
+        font-size: 12px;
+        color: #888;
+      }
+
+      .subtitle-content {
+        max-height: 200px;
+        overflow-y: auto;
+        padding: 10px;
+        background: white;
+        border-radius: 6px;
+        border: 1px solid #e8e8e8;
+        font-size: 13px;
+        line-height: 1.6;
+        white-space: pre-wrap;
+      }
+
+      .subtitle-actions {
+        margin-top: 10px;
+        display: flex;
+        justify-content: flex-end;
+      }
+
+      /* 无字幕选项样式 */
+      .no-subtitle-options {
+        margin-top: 16px;
+        padding: 12px;
+        background-color: #f8f8f8;
+        border: 1px dashed #ddd;
+        border-radius: 6px;
+      }
+
+      .no-subtitle-tip {
+        font-size: 13px;
+        color: #666;
+        margin-bottom: 12px;
+      }
+
+      .no-subtitle-actions {
+        display: flex;
+        gap: 8px;
+      }
+
+      .no-subtitle-actions .action-btn {
+        font-size: 13px;
+        padding: 8px 12px;
+      }
+
+      @media (max-width: 480px) {
+        .sponsor-container {
+          flex-direction: column;
+        }
+
+        .sponsor-btn,
+        .follow-btn {
+          width: 100%;
+        }
+      }
+
+      /* Cookie操作按钮的样式 */
+      .cookie-action-btn-container {
+        /* display: flex;
+        align-items: center;
+        margin-bottom: 16px;
+        gap: 10px; */
+      }
+
+      .cookie-action-btn {
+        padding: 6px 12px;
+        background-color: #3370ff;
+        color: white;
+        border: none;
+        border-radius: 4px;
+        font-size: 13px;
+        cursor: pointer;
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        gap: 6px;
+        transition: all 0.3s ease;
+        height: 36px;
+        box-sizing: border-box;
+        line-height: 1;
+        white-space: nowrap;
+      }
+
+      .cookie-action-btn:hover {
+        background-color: #2860e1;
+      }
+
+      .cookie-action-btn svg {
+        width: 16px;
+        height: 16px;
+        flex-shrink: 0;
+        fill: currentColor;
+        position: relative;
+        top: 0px;
+        vertical-align: -0.125em;
+      }
+
+      .cookie-tip {
+        font-size: 12px;
+        color: #666;
+        flex: 1;
+      }
+
+      /* 批量视频表格样式 */
+      .video-table-container {
+        width: 90%;
+        margin-top: 20px;
+        padding: 20px;
+        background-color: white;
+        border-radius: 8px;
+        box-shadow: 0 4px 16px rgba(0, 0, 0, 0.08);
+      }
+
+      .table-header {
+        /* display: flex;
+        justify-content: space-between;
+        align-items: center; */
+        margin-bottom: 16px;
+      }
+
+      .table-header h3 {
+        font-size: 18px;
+        font-weight: 500;
+      }
+
+      .table-actions {
+        display: flex;
+        gap: 12px;
+      }
+
+      .table-container {
+        overflow: hidden;
+      }
+
+      /* 表体容器样式 */
+      .table-body-container {
+        max-height: 400px;
+        overflow-y: auto;
+        width: 100%;
+        border-top: none;
+      }
+
+      /* 固定表头样式 */
+      thead {
+        position: sticky;
+        top: 0;
+        z-index: 2;
+        background-color: #f8f9fa;
+      }
+
+      th {
+        background-color: #f8f9fa;
+        position: sticky;
+        top: 0;
+        z-index: 1;
+        box-shadow: 0 2px 0 rgba(0, 0, 0, 0.1);
+      }
+
+      /* 创建表体容器 */
+      .table-body-container {
+        max-height: 400px;
+        overflow-y: auto;
+        width: 100%;
+        border-top: none;
+      }
+
+      /* 固定表头样式 */
+      .fixed-header {
+        position: sticky;
+        top: 0;
+        z-index: 10;
+        background-color: #f8f9fa;
+        border-bottom: 2px solid #eee;
+      }
+
+      table {
+        width: 100%;
+        border-collapse: collapse;
+      }
+
+      th,
+      td {
+        padding: 12px;
+        text-align: left;
+        border-bottom: 1px solid #eee;
+        /* overflow: hidden; */
+        /* text-overflow: ellipsis; */
+        /* white-space: nowrap; */
+      }
+
+      /* 表格列宽样式 */
+      th:nth-child(1),
+      td:nth-child(1) {
+        width: 40px;
+        min-width: 40px;
+        max-width: 40px;
+        text-align: center;
+      }
+
+      th:nth-child(2),
+      td:nth-child(2) {
+        width: auto;
+        min-width: 180px;
+        white-space: normal;
+        word-break: break-word;
+        padding-left: 12px;
+      }
+
+      td:nth-child(2) {
+        padding-left: 12px;
+      }
+
+      th:nth-child(3),
+      td:nth-child(3) {
+        width: 100px;
+      }
+
+      th:nth-child(4),
+      td:nth-child(4) {
+        width: 100px;
+        text-align: center;
+      }
+
+      th:nth-child(5),
+      td:nth-child(5) {
+        width: 100px;
+        text-align: center;
+      }
+
+      th:nth-child(6),
+      td:nth-child(6) {
+        width: 120px;
+        text-align: center;
+        white-space: nowrap;
+      }
+
+      th {
+        background-color: #f8f9fa;
+      }
+
+      tbody tr:hover {
+        background-color: #f0f2f5;
+      }
+
+      /* 表格行按钮样式 */
+      .table-action-btn {
+        width: 32px;
+        height: 32px;
+        padding: 0;
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        border: none;
+        border-radius: 6px;
+        cursor: pointer;
+        transition: all 0.2s ease;
+        background-color: transparent;
+      }
+
+      .table-action-btn svg {
+        width: 18px;
+        height: 18px;
+        fill: currentColor;
+      }
+
+      .copy-row-btn {
+        color: #666;
+        background-color: transparent; /* 默认透明，避免遮挡行悬停色 */
+        margin-right: 8px;
+      }
+
+      .copy-row-btn:hover {
+        background-color: #e6f7ff;
+        color: #1890ff;
+      }
+
+      .remove-row-btn {
+        color: #666;
+        background-color: transparent; /* 默认透明，避免遮挡行悬停色 */
+      }
+
+      .remove-row-btn:hover {
+        background-color: #ffeef1;
+        color: #ff4d4f;
+      }
+
+      /* 添加进度圆环样式 */
+      .progress-container {
+        position: fixed;
+        top: 0;
+        left: 0;
+        width: 100%;
+        height: 100%;
+        display: none;
+        justify-content: center;
+        align-items: center;
+        background-color: rgba(255, 255, 255, 0.9);
+        z-index: 1001;
+        backdrop-filter: blur(3px);
+      }
+
+      .progress-container.show {
+        display: flex;
+      }
+
+      .progress-circle {
+        position: relative;
+        width: 220px;
+        height: 220px;
+        display: flex;
+        flex-direction: column;
+        justify-content: center;
+        align-items: center;
+        background-color: white;
+        border-radius: 10px;
+        box-shadow: 0 10px 30px rgba(0, 0, 0, 0.1);
+        padding: 20px;
+      }
+
+      .progress-ring {
+        position: relative;
+        width: 120px;
+        height: 120px;
+        margin-bottom: 15px;
+      }
+
+      .progress-ring-circle {
+        fill: transparent;
+        stroke: #eee;
+        stroke-width: 8;
+      }
+
+      .progress-ring-circle-value {
+        fill: transparent;
+        stroke: #52c41a;
+        stroke-width: 8;
+        stroke-linecap: round;
+        transform: rotate(-90deg);
+        transform-origin: center;
+        transition: stroke-dashoffset 0.3s ease;
+      }
+
+      .progress-text {
+        font-size: 28px;
+        font-weight: bold;
+        color: #333;
+        margin-bottom: 5px;
+      }
+
+      .progress-sub-text {
+        font-size: 14px;
+        color: #666;
+        text-align: center;
+        max-width: 160px;
+        overflow: hidden;
+        text-overflow: ellipsis;
+        white-space: nowrap;
+      }
+
+      a {
+        color: #3370ff;
+        text-decoration: none;
+        cursor: pointer;
+        font-size: 13px;
+      }
+      a:hover {
+        text-decoration: underline;
+        color: #2860e1;
+      }
+
+      /* 自定义下拉框样式 */
+      .custom-select-container {
+        position: relative;
+        min-width: 110px;
+        user-select: none;
+        z-index: 100;
+      }
+
+      .custom-select-trigger {
+        background-color: #ffffff;
+        box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+        border: 1px solid #e0e0e0;
+        border-radius: 6px;
+        padding: 8px 12px;
+        cursor: pointer;
+        position: relative;
+        display: flex;
+        align-items: center;
+        transition: all 0.3s ease;
+        min-width: 120px;
+      }
+
+      .custom-select-selected-text {
+        flex: 1;
+        overflow: hidden;
+        text-overflow: ellipsis;
+        white-space: nowrap;
+      }
+
+      .custom-select-icon {
+        margin-left: 6px;
+        transition: transform 0.2s ease;
+      }
+
+      .custom-select-trigger:hover {
+        border-color: #c0c4cc;
+      }
+
+      .custom-select-trigger.active {
+        border-color: #3370ff;
+        box-shadow: 0 0 0 2px rgba(51, 112, 255, 0.1);
+      }
+
+      .custom-select-dropdown {
+        position: absolute;
+        top: calc(100% + 5px);
+        left: 0;
+        width: 100%;
+        background-color: #fff;
+        border-radius: 4px;
+        box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+        z-index: 1000;
+        overflow: hidden;
+        max-height: 0;
+        opacity: 0;
+        transform: translateY(-10px);
+        transition: all 0.3s cubic-bezier(0.23, 1, 0.32, 1);
+        pointer-events: none;
+        border: 1px solid #ebeef5;
+      }
+
+      .custom-select-dropdown.active {
+        max-height: 200px;
+        opacity: 1;
+        transform: translateY(0);
+        pointer-events: auto;
+      }
+
+      .custom-select-option {
+        position: relative;
+        padding: 10px 12px;
+        cursor: pointer;
+        transition: all 0.2s ease;
+        white-space: nowrap;
+        text-overflow: ellipsis;
+        display: flex;
+        align-items: center;
+      }
+
+      .custom-select-option:hover {
+        background-color: #f5f7fa;
+      }
+
+      .custom-select-option.selected {
+        color: #3370ff;
+        font-weight: 500;
+        background-color: #ecf5ff;
+      }
+
+      .custom-select-option.selected::before {
+        content: '';
+        position: absolute;
+        left: 0;
+        top: 50%;
+        transform: translateY(-50%);
+        width: 3px;
+        height: 32px;
+        background-color: #3370ff;
+        /* border-radius: 0 2px 2px 0; */
+      }
+
+      /* 添加箭头图标 */
+      .select-arrow-icon {
+        width: 16px;
+        height: 16px;
+        fill: #909399;
+        transition: transform 0.3s;
+      }
+
+      /* 选中时样式 */
+      .custom-select-selected-text {
+        color: #303133;
+        white-space: nowrap;
+        overflow: hidden;
+        text-overflow: ellipsis;
+      }
+
+      /* 添加选项图标 */
+      .option-icon {
+        width: 16px;
+        height: 16px;
+        margin-right: 8px;
+        fill: currentColor;
+      }
+    </style>
+  </head>
+  <body>
+    <!-- 免责声明 -->
+    <div
+      style="
+        width: 95%;
+        margin-bottom: 15px;
+        padding: 12px 15px;
+        background-color: #fff9e6;
+        border-radius: 8px;
+        border-left: 4px solid #faad14;
+        font-size: 12px;
+        color: #666;
+        line-height: 1.5;
+      "
+    >
+      <div style="display: flex; align-items: flex-start; margin-bottom: 8px">
+        <span style="font-weight: 500; color: #333">免责声明</span>
+      </div>
+      <p style="margin: 0 0 0 10px">
+        本工具仅供学习与交流使用，禁止用于任何商业用途。<br />
+        使用本工具获取的 B 站数据，用户应遵守国家相关法律法规及 B 站平台规范，严禁用于侵犯他人合法权益的行为。<br />
+        开发者不对因使用本工具所产生的任何直接或间接后果承担责任。
+      </p>
+    </div>
+
+    <!-- 顶部动态公告栏：引导关注与赞助 -->
+    <div style="text-decoration: none; width: 95%; margin-bottom: 12px; display: block">
+      <div
+        style="
+          background: linear-gradient(135deg, #e6f7ff 0%, #f0f9ff 100%);
+          border: 1px solid #bae7ff;
+          border-radius: 8px;
+          padding: 10px 14px;
+          display: flex;
+          align-items: center;
+          gap: 10px;
+          transition: all 0.3s ease;
+          box-shadow: 0 2px 6px rgba(24, 144, 255, 0.1);
+        "
+        onclick="window.open('https://space.bilibili.com/521041866', '_blank')"
+      >
+        <div
+          style="
+            background-color: #1890ff;
+            color: white;
+            width: 32px;
+            height: 32px;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            flex-shrink: 0;
+            font-size: 18px;
+          "
+        >
+          👋
+        </div>
+        <div style="flex: 1">
+          <div style="font-size: 16px; font-weight: 700; color: #1890ff; margin-bottom: 2px">
+            全网最好用的 B 站字幕批量解析神器！
+          </div>
+          <div style="font-size: 14px; color: #595959">
+            🎉 个人开发不易，求个
+            <a
+              id="bannerFollowLink"
+              href="https://space.bilibili.com/521041866"
+              target="_blank"
+              style="color: #1890ff; font-weight: bold; text-decoration: underline"
+              >B 站关注</a
+            >
+            和
+            <a
+              id="bannerSponsorLink"
+              href="https://afdian.com/a/wangchao02"
+              target="_blank"
+              style="color: #1890ff; font-weight: bold; text-decoration: underline"
+              >赞助</a
+            >
+            ，是我积极更新的动力~
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- 使用文档和反馈问题按钮 -->
+    <div style="display: flex; gap: 8px; width: 95%; margin-bottom: 10px">
+      <button
+        id="docBtn"
+        class="help"
+        style="
+          flex: 1;
+          padding: 6px 12px;
+          background-color: #3370ff;
+          color: #fff;
+          border: none;
+          border-radius: 8px;
+          font-size: 13px;
+          font-weight: 500;
+          cursor: pointer;
+          transition: all 0.3s ease;
+          display: flex;
+          align-items: center;
+          justify-content: center;
+          gap: 6px;
+          box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08);
+        "
+      >
+        <svg
+          viewBox="0 0 24 24"
+          style="width: 16px; height: 16px; fill: currentColor"
+        >
+          <path
+            d="M14 2H6c-1.1 0-1.99.9-1.99 2L4 20c0 1.1.89 2 1.99 2H18c1.1 0 2-.9 2-2V8l-6-6zm2 16H8v-2h8v2zm0-4H8v-2h8v2zm-3-5V3.5L18.5 9H13z"
+          />
+        </svg>
+        使用文档
+      </button>
+      <button
+        id="feedbackBtn"
+        class="help"
+        style="
+          flex: 1;
+          padding: 6px 12px;
+          background-color: #3370ff;
+          color: #fff;
+          border: none;
+          border-radius: 8px;
+          font-size: 13px;
+          font-weight: 500;
+          cursor: pointer;
+          transition: all 0.3s ease;
+          display: flex;
+          align-items: center;
+          justify-content: center;
+          gap: 6px;
+          box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08);
+        "
+      >
+        <svg
+          viewBox="0 0 24 24"
+          style="width: 16px; height: 16px; fill: currentColor"
+        >
+          <path
+            d="M20 2H4c-1.1 0-1.99.9-1.99 2L2 22l4-4h14c1.1 0 2-.9 2-2V4c0-1.1-.9-2-2-2zm-7 12h-2v-2h2v2zm0-4h-2V6h2v4z"
+          />
+        </svg>
+        反馈问题
+      </button>
+      <button
+        id="sponsorBtn"
+        class="sponsor-btn"
+        style="
+          flex: 1;
+          padding: 6px 12px;
+          background: linear-gradient(to right, #e36a64, #e36a64);
+          color: #fff;
+          border: none;
+          border-radius: 8px;
+          font-size: 13px;
+          font-weight: 500;
+          cursor: pointer;
+          transition: all 0.3s ease;
+          display: flex;
+          align-items: center;
+          justify-content: center;
+          gap: 6px;
+          box-shadow: 0 2px 8px rgba(255, 77, 156, 0.3);
+        "
+      >
+        ❤️️ 赞助我
+      </button>
+    </div>
+    <div style="display: flex; gap: 8px; width: 95%; margin-bottom: 10px">
+      <button
+        id="getPageUrlBtn"
+        class="get-url-btn"
+        style="flex: 1; padding: 6px 12px; font-size: 13px; margin: 0"
+      >
+        <svg
+          viewBox="0 0 24 24"
+          style="width: 16px; height: 16px"
+        >
+          <path d="M19 13h-6v6h-2v-6H5v-2h6V5h2v6h6v2z" />
+        </svg>
+        获取当前网页地址
+      </button>
+
+      <button
+        id="followBtn"
+        class="follow-btn"
+        style="
+          flex: 1;
+          padding: 6px 12px;
+          background: linear-gradient(to right, #e36a64, #e36a64);
+          color: white;
+          border: none;
+          border-radius: 8px;
+          font-size: 13px;
+          font-weight: 500;
+          cursor: pointer;
+          transition: all 0.3s ease;
+          display: flex;
+          align-items: center;
+          justify-content: center;
+          gap: 6px;
+          box-shadow: 0 2px 8px rgba(255, 77, 156, 0.3);
+        "
+      >
+        🌟 关注我
+      </button>
+    </div>
+    <div class="input-container">
+      <div class="input-row">
+        <label class="input-label">Cookie</label>
+        <div class="input-wrapper">
+          <input
+            type="text"
+            id="bilibiliCookie"
+            class="input-field"
+            placeholder="请点击右侧按钮获取 B站 Cookie"
+          />
+          <button class="clear-btn cookie-clear-btn">
+            <svg viewBox="0 0 24 24">
+              <path
+                d="M19 6.41L17.59 5 12 10.59 6.41 5 5 6.41 10.59 12 5 17.59 6.41 19 12 13.41 17.59 19 19 17.59 13.41 12z"
+              />
+            </svg>
+          </button>
+        </div>
+        <!-- 添加Cookie操作按钮 -->
+        <div class="cookie-action-btn-container">
+          <button
+            id="getCookieBtn"
+            class="cookie-action-btn"
+            style="background-color: #3370ff"
+          >
+            <svg viewBox="0 0 24 24">
+              <path d="M9 16.2L4.8 12l-1.4 1.4L9 19 21 7l-1.4-1.4L9 16.2z" />
+            </svg>
+            获取Cookie
+          </button>
+        </div>
+      </div>
+
+      <!-- 统一的地址输入框 -->
+      <div class="input-row">
+        <div
+          class="custom-select-container"
+          id="urlTypeContainer"
+        >
+          <div
+            class="custom-select-trigger"
+            id="urlTypeTrigger"
+          >
+            <svg
+              class="option-icon"
+              viewBox="0 0 24 24"
+            >
+              <path
+                d="M17 10.5V7c0-.55-.45-1-1-1H4c-.55 0-1 .45-1 1v10c0 .55.45 1 1 1h12c.55 0 1-.45 1-1v-3.5l4 4v-11l-4 4z"
+              />
+            </svg>
+            <span class="custom-select-selected-text">单个视频</span>
+            <svg
+              class="select-arrow-icon"
+              viewBox="0 0 24 24"
+            >
+              <path d="M7 10l5 5 5-5z" />
+            </svg>
+          </div>
+          <div
+            class="custom-select-dropdown"
+            id="urlTypeDropdown"
+          >
+            <div
+              class="custom-select-option selected"
+              data-value="video"
+            >
+              <svg
+                class="option-icon"
+                viewBox="0 0 24 24"
+              >
+                <path
+                  d="M17 10.5V7c0-.55-.45-1-1-1H4c-.55 0-1 .45-1 1v10c0 .55.45 1 1 1h12c.55 0 1-.45 1-1v-3.5l4 4v-11l-4 4z"
+                />
+              </svg>
+              单个视频
+            </div>
+
+            <div
+              class="custom-select-option"
+              data-value="user"
+            >
+              <svg
+                class="option-icon"
+                viewBox="0 0 24 24"
+              >
+                <path
+                  d="M12 12c2.21 0 4-1.79 4-4s-1.79-4-4-4-4 1.79-4 4 1.79 4 4 4zm0 2c-2.67 0-8 1.34-8 4v2h16v-2c0-2.66-5.33-4-8-4z"
+                />
+              </svg>
+              个人主页
+            </div>
+            <div
+              class="custom-select-option"
+              data-value="favorite"
+            >
+              <svg
+                class="option-icon"
+                viewBox="0 0 24 24"
+              >
+                <path d="M12 17.27L18.18 21l-1.64-7.03L22 9.24l-7.19-.61L12 2 9.19 8.63 2 9.24l5.46 4.73L5.82 21z" />
+              </svg>
+              收藏夹
+            </div>
+            <div
+              class="custom-select-option"
+              data-value="collection"
+            >
+              <svg
+                class="option-icon"
+                viewBox="0 0 24 24"
+              >
+                <path
+                  d="M4 6H2v14c0 1.1.9 2 2 2h14v-2H4V6zm16-4H8c-1.1 0-2 .9-2 2v12c0 1.1.9 2 2 2h12c1.1 0 2-.9 2-2V4c0-1.1-.9-2-2-2zm0 14H8V4h12v12zM10 9h8v2h-8zm0 3h4v2h-4zm0-6h8v2h-8z"
+                />
+              </svg>
+              合集
+            </div>
+
+            <div
+              class="custom-select-option"
+              data-value="selection"
+            >
+              <svg
+                class="option-icon"
+                viewBox="0 0 24 24"
+              >
+                <path
+                  d="M4 6H2v14c0 1.1.9 2 2 2h14v-2H4V6zm16-4H8c-1.1 0-2 .9-2 2v12c0 1.1.9 2 2 2h12c1.1 0 2-.9 2-2V4c0-1.1-.9-2-2-2zm-8 12.5v-9l6 4.5-6 4.5z"
+                />
+              </svg>
+              视频选集
+            </div>
+          </div>
+        </div>
+        <div class="input-wrapper">
+          <input
+            id="urlInput"
+            type="text"
+            class="input-field"
+            placeholder="请输入B站单个视频地址"
+          />
+          <button class="clear-btn">
+            <svg viewBox="0 0 24 24">
+              <path
+                d="M19 6.41L17.59 5 12 10.59 6.41 5 5 6.41 10.59 12 5 17.59 6.41 19 12 13.41 17.59 19 19 17.59 13.41 12z"
+              />
+            </svg>
+          </button>
+        </div>
+        <div class="cookie-action-btn-container">
+          <button
+            id="generateUrlBtn"
+            class="cookie-action-btn"
+            style="background-color: #3370ff; display: block"
+          >
+            <svg viewBox="0 0 24 24">
+              <path d="M19 13h-6v6h-2v-6H5v-2h6V5h2v6h6v2z" />
+            </svg>
+            获取视频
+          </button>
+          <button
+            id="getFavoriteBtn"
+            class="cookie-action-btn"
+            style="background-color: #3370ff; display: none"
+          >
+            <svg viewBox="0 0 24 24">
+              <path d="M19 13h-6v6h-2v-6H5v-2h6V5h2v6h6v2z" />
+            </svg>
+            获取视频
+          </button>
+          <span class="cookie-tip"></span>
+        </div>
+      </div>
+    </div>
+
+    <!-- 批量视频表格 -->
+    <div
+      id="videoTableContainer"
+      class="video-table-container"
+    >
+      <div class="table-header">
+        <h3>
+          📹 视频列表
+          <span
+            id="videoCountInfo"
+            style="font-size: 14px; font-weight: normal; color: #666; margin-left: 8px; display: none"
+            >(总共:
+            <span
+              id="totalVideoCount"
+              style="color: #3370ff; font-weight: bold"
+              >0</span
+            >
+            条, 获取成功:
+            <span
+              id="completedSubtitleCount"
+              style="color: #3370ff; font-weight: bold"
+              >0</span
+            >
+            条)</span
+          >
+        </h3>
+        <div class="table-actions">
+          <button
+            id="batchGetSubtitleBtn"
+            class="action-btn primary-btn"
+          >
+            <svg viewBox="0 0 24 24">
+              <path
+                d="M17 10.5V7c0-.55-.45-1-1-1H4c-.55 0-1 .45-1 1v10c0 .55.45 1 1 1h12c.55 0 1-.45 1-1v-3.5l4 4v-11l-4 4zM14 13h-3v3H9v-3H6v-2h3V8h2v3h3v2z"
+              />
+            </svg>
+            获取字幕
+          </button>
+          <button
+            id="exportTableBtn"
+            class="action-btn secondary-btn"
+            style="background: linear-gradient(to right, #ffb300, #ffb300); color: #fff"
+          >
+            <svg viewBox="0 0 24 24">
+              <path d="M19 9h-4V3H9v6H5l7 7 7-7zM5 18v2h14v-2H5z" />
+            </svg>
+            导出字幕
+          </button>
+          <button
+            id="clearTableBtn"
+            class="action-btn secondary-btn"
+            style="background-color: #e36a64; color: #fff"
+          >
+            <svg viewBox="0 0 24 24">
+              <path d="M6 19c0 1.1.9 2 2 2h8c1.1 0 2-.9 2-2V7H6v12zM19 4h-3.5l-1-1h-5l-1 1H5v2h14V4z" />
+            </svg>
+            清空表格
+          </button>
+        </div>
+      </div>
+
+      <!-- 表格容器 -->
+      <div
+        class="table-container"
+        style="width: 100%; overflow: hidden"
+      >
+        <!-- 表头部分 -->
+        <div
+          style="overflow: hidden; width: 100%"
+          id="tableHeaderContainer"
+        >
+          <table style="width: 100%; border-collapse: collapse">
+            <colgroup>
+              <col style="width: 50px; min-width: 50px" />
+              <col style="width: auto; min-width: 180px" />
+              <col style="width: 100px; min-width: 100px" />
+              <col style="width: 100px; min-width: 100px" />
+              <col style="width: 100px; min-width: 100px" />
+              <col style="width: 120px; min-width: 120px" />
+            </colgroup>
+            <thead>
+              <tr>
+                <th style="background-color: #f8f9fa; border-bottom: 2px solid #ddd; padding: 12px; text-align: center">
+                  序号
+                </th>
+                <th style="background-color: #f8f9fa; border-bottom: 2px solid #ddd; padding: 12px; text-align: left">
+                  标题
+                </th>
+                <th style="background-color: #f8f9fa; border-bottom: 2px solid #ddd; padding: 12px; text-align: left">
+                  作者
+                </th>
+                <th style="background-color: #f8f9fa; border-bottom: 2px solid #ddd; padding: 12px; text-align: center">
+                  发布日期
+                </th>
+                <th style="background-color: #f8f9fa; border-bottom: 2px solid #ddd; padding: 12px; text-align: center">
+                  字幕状态
+                </th>
+                <th style="background-color: #f8f9fa; border-bottom: 2px solid #ddd; padding: 12px; text-align: center">
+                  操作
+                </th>
+              </tr>
+            </thead>
+          </table>
+        </div>
+
+        <!-- 表体部分（可滚动） -->
+        <div
+          id="tableBodyContainer"
+          class="table-body-container"
+          style="max-height: 400px; overflow: auto; width: 100%"
+        >
+          <table
+            id="videoTable"
+            style="width: 100%; border-collapse: collapse; margin-top: 0"
+          >
+            <colgroup>
+              <col style="width: 50px; min-width: 50px" />
+              <col style="width: auto; min-width: 180px" />
+              <col style="width: 100px; min-width: 100px" />
+              <col style="width: 100px; min-width: 100px" />
+              <col style="width: 100px; min-width: 100px" />
+              <col style="width: 120px; min-width: 120px" />
+            </colgroup>
+            <tbody id="videoTableBody">
+              <!-- 表格内容将通过JavaScript动态添加 -->
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+
+    <!-- Toast通知 -->
+    <div
+      id="errorToast"
+      class="error-toast"
+    >
+      <svg
+        class="error-toast-icon"
+        viewBox="0 0 24 24"
+      >
+        <path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm1 15h-2v-2h2v2zm0-4h-2V7h2v6z" />
+      </svg>
+      <div class="error-toast-message">错误提示</div>
+      <button class="error-toast-close">
+        <svg viewBox="0 0 24 24">
+          <path
+            d="M19 6.41L17.59 5 12 10.59 6.41 5 5 6.41 10.59 12 5 17.59 6.41 19 12 13.41 17.59 19 19 17.59 13.41 12z"
+          />
+        </svg>
+      </button>
+    </div>
+    <div
+      id="successToast"
+      class="success-toast"
+      style="
+        border-radius: 10px;
+        box-shadow: 0 10px 25px rgba(0, 0, 0, 0.15);
+        backdrop-filter: blur(8px);
+        background-color: rgba(255, 255, 255, 0.95);
+      "
+    >
+      <svg
+        class="success-toast-icon"
+        viewBox="0 0 24 24"
+      >
+        <path
+          d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm-2 15l-5-5 1.41-1.41L10 14.17l7.59-7.59L19 8l-9 9z"
+        />
+      </svg>
+      <div class="success-toast-message">操作成功</div>
+      <button class="success-toast-close">
+        <svg viewBox="0 0 24 24">
+          <path
+            d="M19 6.41L17.59 5 12 10.59 6.41 5 5 6.41 10.59 12 5 17.59 6.41 19 12 13.41 17.59 19 19 17.59 13.41 12z"
+          />
+        </svg>
+      </button>
+    </div>
+
+    <!-- 关注弹窗 -->
+    <div
+      id="followModal"
+      style="
+        display: none;
+        position: fixed;
+        top: 0;
+        left: 0;
+        width: 100%;
+        height: 100%;
+        background: rgba(0, 0, 0, 0.5);
+        z-index: 2000;
+        justify-content: center;
+        align-items: center;
+        backdrop-filter: blur(4px);
+        animation: fadeIn 0.3s ease;
+      "
+    >
+      <div
+        style="
+          background: white;
+          width: 85%;
+          max-width: 320px;
+          border-radius: 12px;
+          padding: 24px 20px;
+          text-align: center;
+          box-shadow: 0 10px 25px rgba(0, 0, 0, 0.2);
+          transform: scale(0.9);
+          animation: popIn 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275) forwards;
+        "
+      >
+        <div style="font-size: 40px; margin-bottom: 10px">🎉</div>
+        <h3 style="margin: 0 0 8px; color: #333; font-size: 18px">恭喜您！</h3>
+        <p style="margin: 0 0 20px; color: #666; font-size: 14px; line-height: 1.5">
+          您已成功批量解析了超过
+          <span style="color: #1890ff; font-weight: bold; font-size: 16px">100</span> 次视频字幕！
+          <br />
+          如果觉得好用，可以支持一下作者吗？
+          <br />
+          对作者非常重要的，也是作者更新动力,非常感谢！💗
+        </p>
+        <div style="display: flex; flex-direction: column; gap: 10px">
+          <a
+            id="modalFollowBtn"
+            href="https://space.bilibili.com/521041866"
+            target="_blank"
+            class="close-modal-btn"
+            style="
+              background: #1890ff;
+              color: white;
+              padding: 10px;
+              border-radius: 6px;
+              text-decoration: none;
+              font-size: 14px;
+              font-weight: 500;
+              display: block;
+            "
+          >
+            前往 B 站关注
+          </a>
+          <a
+            id="modalSponsorBtn"
+            href="https://afdian.com/a/wangchao02"
+            target="_blank"
+            class="close-modal-btn"
+            style="
+              background: #fff;
+              color: #1890ff;
+              border: 1px solid #1890ff;
+              padding: 10px;
+              border-radius: 6px;
+              text-decoration: none;
+              font-size: 14px;
+              font-weight: 500;
+              display: block;
+            "
+          >
+            前往赞助支持
+          </a>
+          <button
+            class="close-modal-btn"
+            style="
+              background: transparent;
+              border: none;
+              color: #8c8c8c;
+              padding: 8px;
+              font-size: 12px;
+              cursor: pointer;
+              margin-top: 4px;
+            "
+          >
+            下次一定
+          </button>
+        </div>
+      </div>
+    </div>
+
+    <!-- 添加进度圆环容器 -->
+    <div
+      id="progressContainer"
+      class="progress-container"
+    >
+      <div class="progress-circle">
+        <div class="progress-ring">
+          <svg
+            width="120"
+            height="120"
+          >
+            <circle
+              class="progress-ring-circle"
+              cx="60"
+              cy="60"
+              r="54"
+            ></circle>
+            <circle
+              id="progressCircleValue"
+              class="progress-ring-circle-value"
+              cx="60"
+              cy="60"
+              r="54"
+              stroke-dasharray="339.292"
+              stroke-dashoffset="339.292"
+            ></circle>
+          </svg>
+        </div>
+        <div
+          id="progressText"
+          class="progress-text"
+        >
+          0%
+        </div>
+        <div
+          id="progressSubText"
+          class="progress-sub-text"
+        >
+          获取字幕中...
+        </div>
+      </div>
+    </div>
+
+    <script src="data.js"></script>
+    <script src="jszip.min.js"></script>
+    <script src="script.js"></script>
+  </body>
+</html>

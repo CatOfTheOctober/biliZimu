@@ -1,0 +1,4 @@
+# file: D:\Kiro_proj\Test1\src\bilibili_extractor\modules\output_formatter.py
+# hypothesis_version: 6.151.9
+
+[1000, 3600, '# Video: ', '.', '0', 'confidence', 'duration', 'end_time', 'has_subtitle', 'json', 'markdown', 'metadata', 'method', 'processing_time', 'segments', 'source', 'srt', 'start_time', 'text', 'title', 'txt', 'url', 'video_id', 'video_info']
