@@ -1,3 +1,5 @@
+[说明] 旧 CLI 命令 python 下载字幕.py
+
 # B站Cookie使用指南
 
 ## 快速开始
@@ -36,10 +38,10 @@
 
 ```bash
 # 基本用法
-python -m bilibili_extractor "视频URL" --cookie bilibili_cookie.txt
+python 下载字幕.py
 
 # 你的视频示例
-python -m bilibili_extractor "https://www.bilibili.com/video/BV1bicgzaEA3" --cookie bilibili_cookie.txt
+python 下载字幕.py
 ```
 
 ## 为什么需要Cookie？
@@ -92,7 +94,7 @@ pip install openai-whisper
 
 然后运行：
 ```bash
-python -m bilibili_extractor "视频URL"
+python 下载字幕.py
 ```
 
 系统会自动检测没有字幕，然后使用ASR。
@@ -115,7 +117,7 @@ python -m bilibili_extractor "视频URL"
 ```bash
 # 1. 获取Cookie文件（按照上面的方法）
 # 2. 运行命令
-python -m bilibili_extractor "https://www.bilibili.com/video/BV1bicgzaEA3" --cookie bilibili_cookie.txt
+python 下载字幕.py
 ```
 
 如果成功，你会看到：
@@ -136,7 +138,7 @@ pip install funasr
 
 # 或者使用Whisper
 pip install openai-whisper
-python -m bilibili_extractor "视频URL" --asr-engine whisper --cookie bilibili_cookie.txt
+python 下载字幕.py
 ```
 
 ## Cookie安全提示
@@ -162,5 +164,7 @@ asr_engine: "funasr"
 
 然后运行：
 ```bash
-python -m bilibili_extractor "视频URL" --config config.yaml
+python 下载字幕.py
 ```
+
+

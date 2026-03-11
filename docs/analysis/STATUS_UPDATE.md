@@ -1,3 +1,5 @@
+[说明] 旧 CLI 命令 python 下载字幕.py
+
 # 项目状态更新
 
 ## 当前状态
@@ -70,7 +72,7 @@ bilibili-extractor "https://www.bilibili.com/video/BV1M8c7zSEBQ/"
 **症状**：`pip install -e .` 失败，说找不到 pyproject.toml
 **解决方案**：
 - 确保在项目根目录运行命令
-- 或使用 `python -m bilibili_extractor` 直接运行
+- 或使用 `python 下载字幕.py` 直接运行
 
 ### 问题 2: AI 字幕 API 返回 404
 **症状**：无法获取 AI 字幕
@@ -146,3 +148,5 @@ bilibili-extractor "https://www.bilibili.com/video/BV1M8c7zSEBQ/"
 下一步需要用户的配合，提供有效的 Cookie，以便我们进一步诊断和修复问题。
 
 感谢你的耐心！
+
+

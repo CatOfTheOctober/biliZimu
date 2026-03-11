@@ -1,21 +1,27 @@
-"""CLI entry point for bilibili-extractor."""
+"""Compatibility shell entry for bilibili-extractor.
+
+The legacy CLI workflow has been deprecated.
+Use the project root script `下载字幕.py` as the only supported entry.
+"""
 
 import sys
-import os
 
-# Add src directory to path when running directly
+
+DEPRECATED_MESSAGE = (
+    "\n"
+    "============================================================\n"
+    "bilibili_extractor CLI 已废弃，仅保留兼容壳入口。\n"
+    "请使用项目根目录脚本执行下载：\n"
+    "  python 下载字幕.py\n"
+    "============================================================\n"
+)
+
+
+def main() -> int:
+    """Print migration guidance and exit."""
+    print(DEPRECATED_MESSAGE)
+    return 0
+
+
 if __name__ == "__main__":
-    src_dir = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
-    if src_dir not in sys.path:
-        sys.path.insert(0, src_dir)
-
-from bilibili_extractor.cli import main as cli_main
-
-
-def main():
-    """Entry point for the bilibili-extractor command."""
-    return cli_main()
-
-
-if __name__ == "__main__":
-    sys.exit(main())
+    raise SystemExit(main())

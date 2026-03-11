@@ -1,3 +1,5 @@
+[说明] 旧 CLI 命令 python 下载字幕.py
+
 # BBDown Path Fix for Video Downloader
 
 ## Issue Description
@@ -69,7 +71,7 @@ BBDown is now searched in the following order:
 Tested with a video that has regular subtitles (not AI subtitles):
 
 ```bash
-python -m bilibili_extractor "https://www.bilibili.com/video/BV1PeoyYmEnq?vd_source=cd3ecdc981801d2a54a308d648c1d491"
+python 下载字幕.py
 ```
 
 **Result**:
@@ -100,3 +102,5 @@ This is expected behavior - not all videos have AI subtitles. The system correct
 - ASR fallback workflow is now functional
 - Consistent tool path resolution across all modules (AuthManager, VideoDownloader)
 - Better error messages when BBDown is not found
+
+

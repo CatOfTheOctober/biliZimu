@@ -22,7 +22,7 @@ class ToolFinder:
     def _find_project_root(self) -> Path:
         """查找项目根目录。
         
-        从当前工作目录向上查找，直到找到包含pyproject.toml或setup.py的目录。
+        从当前工作目录向上查找，直到找到包含 pyproject.toml 的目录。
         
         Returns:
             项目根目录路径
@@ -32,7 +32,7 @@ class ToolFinder:
         # 向上查找最多5层
         for _ in range(5):
             # 检查是否是项目根目录
-            if (current / "pyproject.toml").exists() or (current / "setup.py").exists():
+            if (current / "pyproject.toml").exists():
                 self.logger.debug(f"Found project root: {current}")
                 return current
             
