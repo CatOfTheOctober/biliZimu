@@ -10,3 +10,10 @@ openai-whisper>=20230314
 # OCR dependencies (optional)
 paddleocr>=2.7.0
 opencv-python>=4.8.0
+
+# Development dependencies
+pytest>=7.4.0
+pytest-cov>=4.1.0
+hypothesis>=6.82.0
+black>=23.7.0
+mypy>=1.4.0
