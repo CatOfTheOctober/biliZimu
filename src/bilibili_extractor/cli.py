@@ -9,11 +9,17 @@ import time
 from pathlib import Path
 from typing import Optional
 
+# Add src directory to sys.path to ensure modules are found (Requirement 10.1)
+src_path = str(Path(__file__).parent.parent.absolute())
+if src_path not in sys.path:
+    sys.path.insert(0, src_path)
+
 from bilibili_extractor.core.config import Config, ConfigLoader
-from bilibili_extractor.core.extractor import TextExtractor
+from bilibili_extractor.core.extractor import TextExtractor, ExtractionResult
 from bilibili_extractor.modules.output_formatter import OutputFormatter
 from bilibili_extractor.modules.url_validator import URLValidationError
 from bilibili_extractor.modules.subtitle_fetcher import SubtitleNotFoundError
+from bilibili_extractor.utils.logger import Logger
 
 
 def parse_arguments() -> argparse.Namespace:
@@ -319,7 +325,17 @@ def process_single_url(url: str, config: Config, args: argparse.Namespace) -> in
         
         # Step 2: Extract text (Requirement 10.2)
         print("[INFO] Starting extraction...")
-        result = extractor.extract(url)
+        try:
+            result = extractor.extract(url, force_asr=False)
+        except SubtitleNotFoundError:
+            print("\n[!] 未找到 API 字幕 (AI字幕下载失败)。")
+            choice = input("是否进一步下载视频用于 ASR 模型识别字幕? (y/N): ").strip().lower()
+            if choice == 'y':
+                print("[INFO] 正在启动视频下载与 ASR 识别流程...")
+                result = extractor.extract(url, force_asr=True)
+            else:
+                print("[INFO] 用户取消。程序退出。")
+                return 0
         
         # Step 3: Determine output path
         if args.output:
@@ -570,6 +586,13 @@ def main() -> int:
     Returns:
         Exit code (0 for success, non-zero for failure)
     """
+    # 打印引导提示 (针对用户反馈的 CLI 环境隔离问题)
+    print("\n" + "="*60)
+    print("💡 温馨提示: 推荐使用项目根目录下的 '下载字幕.py' 脚本")
+    print("   该脚本经过针对性优化，支持自动 ASR 降级和 WBI 签名处理，体验更佳。")
+    print("   执行指令: python 下载字幕.py")
+    print("="*60 + "\n")
+
     # Parse arguments
     args = parse_arguments()
     

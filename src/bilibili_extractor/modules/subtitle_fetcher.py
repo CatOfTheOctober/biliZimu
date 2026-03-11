@@ -369,112 +369,59 @@ class SubtitleFetcher:
             self.logger.error(f"BBDown 获取字幕失败: {e}")
             return None
     
-    def fetch_from_bilibili_api(self, bvid: str, url: str = "") -> Optional[List[TextSegment]]:
-        """使用B站API获取字幕，实现三级降级链路。
+    def fetch_subtitle(self, bvid: str, url: str = "") -> Optional[List[TextSegment]]:
+        """使用 B 站 API 获取字幕（AI 字幕优先）。
         
-        三级降级链路：
-        1. WBI API（支持重试和风控处理）
-        2. V2 API（降级方案，支持字幕验证）
-        3. BBDown（最终降级方案）
+        完全同步“下载字幕.py”逻辑：
+        1. 获取视频信息 (aid, cid)
+        2. 调用 get_subtitle_with_ai_fallback 获取字幕内容
+        3. 进行 aid/cid 匹配验证
         
         Args:
-            bvid: 视频BVID
-            url: 完整视频URL（用于提取分P信息）
+            bvid: 视频 BVID
+            url: 完整视频 URL
             
         Returns:
-            TextSegment列表，如果获取失败返回None
-            
-        Raises:
-            SubtitleNotFoundError: 所有字幕获取方式都失败
+            TextSegment 列表，如果获取失败返回 None
         """
         if not self.bilibili_api:
-            self.logger.warning("BilibiliAPI 未初始化，无法获取字幕")
+            self.logger.warning("BilibiliAPI 未初始化")
             return None
         
         try:
-            # 从URL中提取分P页码
+            # 1. 获取视频信息 (支持多P)
             from .url_validator import URLValidator
             page = URLValidator.extract_page_number(url) if url else 1
-            
-            # 获取视频信息（支持多P视频）
-            self.logger.info(f"获取视频信息: {bvid} (分P {page})")
             video_info = self.bilibili_api.get_video_info(bvid, page)
             aid = video_info['aid']
             cid = video_info['cid']
-            page_count = video_info.get('page_count', 1)
             
-            if page_count > 1:
-                self.logger.info(f"检测到多P视频: 共 {page_count} 个分P，使用第 {page} 个分P")
+            # 2. 直接调用与“下载字幕.py”一致的 API ( Requirement 5.1/5.4 增强)
+            self.logger.info(f"正在从 API 获取字幕 (BVID: {bvid}, CID: {cid})")
+            result = self.bilibili_api.get_subtitle_with_ai_fallback(bvid, cid)
             
-            # 三级降级链路
-            segments = None
+            if not result.get('success'):
+                self.logger.info(f"API 字幕获取未成功: {result.get('message')}")
+                return None
             
-            # 1. 首先尝试 WBI API（支持重试和风控处理）
-            self.logger.info("尝试 WBI API...")
-            segments = self._fetch_from_wbi_api(aid, cid)
+            # 3. 字幕内容解析
+            subtitles_data = result.get('subtitles', [])
+            if not subtitles_data:
+                return None
             
-            if segments:
-                self.logger.info(f"WBI API 成功获取 {len(segments)} 个字幕片段")
-                return segments
+            # 这里的 subtitles_data 已经是 bilibili_api 内部处理过的字典列表
+            # 由于 bilibili_api.get_subtitle_with_ai_fallback 内部已经处理了下载
+            # 我们只需要将这些 body 里的片段转换成 TextSegment 对象
+            from bilibili_extractor.modules.subtitle_parser import SubtitleParser
+            segments = SubtitleParser.parse_subtitle({'body': subtitles_data})
             
-            # 2. WBI API 失败，降级到 V2 API
-            self.logger.info("WBI API 失败，降级到 V2 API...")
-            segments = self._fetch_from_v2_api(aid, cid)
+            self.logger.info(f"成功同步获取 API 字幕，共 {len(segments)} 条片段")
+            return segments
             
-            if segments:
-                self.logger.info(f"V2 API 成功获取 {len(segments)} 个字幕片段")
-                return segments
-            
-            # 3. V2 API 失败，降级到 BBDown
-            self.logger.info("V2 API 失败，降级到 BBDown...")
-            segments = self._fetch_from_bbdown(bvid)
-            
-            if segments:
-                self.logger.info(f"BBDown 成功获取 {len(segments)} 个字幕片段")
-                return segments
-            
-            # 所有方式都失败
-            self.logger.error("所有字幕获取方式都失败：WBI API → V2 API → BBDown")
-            raise SubtitleNotFoundError(f"所有字幕获取方式都失败：WBI API → V2 API → BBDown")
-            
-        except SubtitleNotFoundError:
-            # 重新抛出 SubtitleNotFoundError
-            raise
         except Exception as e:
-            self.logger.error(f"获取字幕失败: {e}")
+            self.logger.error(f"API 字幕获取失败: {e}")
             return None
-    
-    def fetch_subtitle(self, video_id: str, url: str = "") -> Optional[List[TextSegment]]:
-        """获取字幕（带优先级降级）。
-        
-        优先级：
-        1. Bilibili API（AI字幕 + 普通字幕）
-        2. 返回None（由调用者决定是否降级到ASR）
-        
-        Args:
-            video_id: 视频ID（BVID）
-            url: 完整视频URL（用于提取分P信息）
-            
-        Returns:
-            TextSegment列表，如果获取失败返回None
-        """
-        # 首先尝试Bilibili API
-        if self.bilibili_api:
-            try:
-                self.logger.info(f"Attempting to fetch subtitle from Bilibili API for {video_id}")
-                segments = self.fetch_from_bilibili_api(video_id, url)
-                if segments:
-                    return segments
-            except SubtitleNotFoundError as e:
-                self.logger.info(f"Subtitle not found via Bilibili API: {e}")
-                return None
-            except Exception as e:
-                self.logger.warning(f"Bilibili API failed: {e}, will return None")
-                return None
-        
-        # 如果没有初始化BilibiliAPI，返回None
-        self.logger.info("BilibiliAPI not available, returning None")
-        return None
+
 
     def check_subtitle_availability(self, video_id: str) -> bool:
         """Check if video has official subtitles.

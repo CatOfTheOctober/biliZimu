@@ -43,15 +43,17 @@ class FunASREngine(ASREngine):
     Validates: Requirements 5.1, 5.2, 5.3, 5.4, 5.7, 5.8
     """
 
-    def __init__(self, model: str = "paraformer-zh", use_int8: bool = False, use_onnx: bool = False):
+    def __init__(self, model: str = "paraformer-zh", model_path: Optional[str] = None, use_int8: bool = False, use_onnx: bool = False):
         """Initialize FunASR engine.
 
         Args:
             model: Model name to use (default: paraformer-zh)
+            model_path: Path to local FunASR model directory
             use_int8: Whether to use INT8 quantization for CPU optimization
             use_onnx: Whether to use ONNX Runtime for acceleration
         """
         self.model = model
+        self.model_path = model_path
         self.vad_model = "fsmn-vad"
         self.punc_model = "ct-punc"
         self.use_int8 = use_int8
@@ -81,9 +83,9 @@ class FunASREngine(ASREngine):
             # Import FunASR (lazy import to avoid dependency issues)
             try:
                 from funasr import AutoModel
-            except ImportError:
+            except ImportError as e:
                 raise FileNotFoundError(
-                    "FunASR not installed. Please install it with: pip install funasr"
+                    f"FunASR not installed or missing dependencies: {str(e)}. Please install it with: pip install funasr"
                 )
             
             # Initialize pipeline if not already done (Requirement 5.2)
@@ -93,16 +95,35 @@ class FunASREngine(ASREngine):
                 
                 # Configure model based on optimization settings
                 model_name = self.model
-                if self.use_onnx:
+                vad_name = self.vad_model
+                punc_name = self.punc_model
+                
+                # 如果指定了模型路径，尝试从本地加载模型
+                if self.model_path:
+                    model_path = Path(self.model_path)
+                    if model_path.exists():
+                        # 查找具体模型子目录 (适配 ModelScope 下载结构)
+                        # 结构: D:/Funasr_model/speech_seaco_paraformer_large_asr_nat-zh-cn-16k-common-vocab8404-pytorch/model.pt
+                        for sub_dir in model_path.iterdir():
+                            if sub_dir.is_dir():
+                                if "paraformer" in sub_dir.name and "speech" in sub_dir.name:
+                                    model_name = str(sub_dir)
+                                elif "fsmn_vad" in sub_dir.name:
+                                    vad_name = str(sub_dir)
+                                elif "punc" in sub_dir.name:
+                                    punc_name = str(sub_dir)
+
+                if self.use_onnx and not self.model_path:
                     model_name = f"{self.model}-onnx"
                 
                 # Create pipeline with VAD and punctuation (Requirements 5.3, 5.4)
                 self._pipeline = AutoModel(
                     model=model_name,
-                    vad_model=self.vad_model,
-                    punc_model=self.punc_model,
+                    vad_model=vad_name,
+                    punc_model=punc_name,
                     device="cpu",
-                    quantize=self.use_int8  # INT8 quantization if enabled
+                    quantize=self.use_int8,  # INT8 quantization if enabled
+                    disable_update=True  # 禁用自动更新以提高启动速度
                 )
                 
                 if progress_callback:
@@ -156,9 +177,26 @@ class FunASREngine(ASREngine):
         if isinstance(result_data, dict):
             text = result_data.get("text", "")
             timestamps = result_data.get("timestamp", [])
+            sentence_info = result_data.get("sentence_info", [])
             
-            # If we have word-level timestamps (Requirement 5.3)
-            if timestamps and isinstance(timestamps, list):
+            # 优先处理 sentence_info (FunASR 1.3.x 开启 VAD 后的标准返回格式)
+            if sentence_info and isinstance(sentence_info, list):
+                for sent in sentence_info:
+                    start_time = float(sent.get("start", 0)) / 1000.0
+                    end_time = float(sent.get("end", 0)) / 1000.0
+                    sentence_text = sent.get("sentence", "").strip()
+                    
+                    if sentence_text:
+                        segments.append(TextSegment(
+                            start_time=start_time,
+                            end_time=end_time,
+                            text=sentence_text,
+                            confidence=1.0,
+                            source="asr"
+                        ))
+            
+            # 如果没有 sentence_info，尝试原有的 timestamps (词级或旧版格式)
+            elif timestamps and isinstance(timestamps, list) and not segments:
                 for ts_item in timestamps:
                     if isinstance(ts_item, (list, tuple)) and len(ts_item) >= 3:
                         # Format: [word, start_ms, end_ms]
@@ -173,16 +211,16 @@ class FunASREngine(ASREngine):
                             confidence=1.0,  # FunASR doesn't provide confidence scores
                             source="asr"
                         ))
-            else:
-                # No timestamps, create single segment with full text
-                if text:
-                    segments.append(TextSegment(
-                        start_time=0.0,
-                        end_time=0.0,
-                        text=text,
-                        confidence=1.0,
-                        source="asr"
-                    ))
+            
+            # 最后的保底兜底逻辑
+            if not segments and text:
+                segments.append(TextSegment(
+                    start_time=0.0,
+                    end_time=0.0,
+                    text=text,
+                    confidence=1.0,
+                    source="asr"
+                ))
         
         # Sort by start_time to ensure monotonic order (Requirement 5.3)
         segments.sort(key=lambda s: s.start_time)

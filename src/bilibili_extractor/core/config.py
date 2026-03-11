@@ -10,45 +10,50 @@ import logging
 
 @dataclass
 class Config:
-    """Configuration for bilibili-extractor."""
+    """Configuration for bilibili-extractor.
+    
+    All default values should ideally be managed via config/default_config.yaml.
+    The values here serve as a final fallback or represent the structure.
+    """
 
     # General settings
-    temp_dir: str = "./temp"
-    output_dir: str = "./output"
-    log_level: str = "INFO"
-    keep_temp_files: bool = False
+    temp_dir: str = field(default="./temp")
+    output_dir: str = field(default="./output")
+    log_level: str = field(default="INFO")
+    keep_temp_files: bool = field(default=False)
 
     # Tool paths (relative to project root)
-    bbdown_path: Optional[str] = None  # Auto-detect if None
-    ffmpeg_path: Optional[str] = None  # Auto-detect if None
-    ffprobe_path: Optional[str] = None  # Auto-detect if None
+    bbdown_path: Optional[str] = field(default=None)
+    ffmpeg_path: Optional[str] = field(default=None)
+    ffprobe_path: Optional[str] = field(default=None)
 
     # Download settings
-    cookie_file: Optional[str] = None
-    auto_login: bool = True
-    login_type: str = 'web'  # 'web' or 'tv'
-    video_quality: str = "720P"  # 480P/720P/1080P
-    download_threads: int = 4
+    cookie_file: Optional[str] = field(default="tools/BBDown/BBDown.data")
+    auto_login: bool = field(default=True)
+    login_type: str = field(default='web')  # 'web' or 'tv'
+    video_quality: str = field(default="720P")
+    download_threads: int = field(default=4)
 
     # ASR settings
-    asr_engine: str = "funasr"  # funasr/whisper
-    funasr_model: str = "paraformer-zh"
-    whisper_model: str = "base"
-    language: Optional[str] = None
-    use_int8: bool = False  # INT8 quantization for FunASR
-    use_onnx: bool = False  # ONNX Runtime for FunASR
+    asr_engine: str = field(default="funasr")
+    funasr_model: str = field(default="paraformer-zh")
+    funasr_model_path: Optional[str] = field(default="D:/Funasr_model")
+    whisper_model: str = field(default="base")
+    language: Optional[str] = field(default=None)
+    use_int8: bool = field(default=False)
+    use_onnx: bool = field(default=False)
 
-    # OCR settings
-    enable_ocr: bool = False
-    ocr_engine: str = "paddleocr"
+    # OCR settings (Legacy/Future)
+    enable_ocr: bool = field(default=False)
+    ocr_engine: str = field(default="paddleocr")
 
     # Output settings
-    output_format: str = "txt"  # srt/json/txt/markdown
+    output_format: str = field(default="txt")
     
     # API 请求配置
-    api_request_interval: int = 20  # API 请求间隔（秒）
-    api_retry_max_attempts: int = 3  # API 重试最大次数
-    api_retry_wait_time: int = 20  # API 重试等待时间（秒）
+    api_request_interval: int = field(default=20)
+    api_retry_max_attempts: int = field(default=3)
+    api_retry_wait_time: int = field(default=20)
     
     # 内部存储解析后的路径
     _resolved_temp_dir: Optional[Path] = None
@@ -58,6 +63,18 @@ class Config:
         """初始化后处理，解析路径。"""
         # 延迟导入以避免循环导入
         from ..utils.tool_finder import ToolFinder
+        
+        # 尝试从默认位置加载 Cookie 内容（如果存在）
+        if self.cookie_file:
+            cookie_path = self.resolve_path(self.cookie_file)
+            if cookie_path.exists() and cookie_path.is_file():
+                try:
+                    with open(cookie_path, 'r', encoding='utf-8') as f:
+                        # 如果没有显式设置 cookie 字符串，这里不直接修改类属性，
+                        # 但我们可以在需要的地方使用这个 resolve_path(self.cookie_file)
+                        pass
+                except Exception:
+                    pass
         
         # 解析临时目录路径
         temp_path = Path(self.temp_dir)

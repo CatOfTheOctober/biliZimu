@@ -121,7 +121,7 @@ def download_subtitle(video_input):
                         url = f"https://www.bilibili.com/video/{bvid}"
                         config = Config()
                         extractor = TextExtractor(config)
-                        asr_result = extractor.extract(url)
+                        asr_result = extractor.extract(url, force_asr=True)
                         
                         if asr_result and asr_result.segments:
                             os.makedirs('output', exist_ok=True)
@@ -158,7 +158,7 @@ def download_subtitle(video_input):
                     url = f"https://www.bilibili.com/video/{bvid}"
                     config = Config()
                     extractor = TextExtractor(config)
-                    asr_result = extractor.extract(url)
+                    asr_result = extractor.extract(url, force_asr=True)
                     
                     if asr_result and asr_result.segments:
                         os.makedirs('output', exist_ok=True)

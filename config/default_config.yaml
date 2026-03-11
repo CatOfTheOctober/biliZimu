@@ -2,8 +2,6 @@
 # 
 # This file contains all available configuration options with their default values.
 # Copy this file and modify it to customize the behavior of the extractor.
-#
-# Usage: bilibili-extractor <url> --config your_config.yaml
 
 # ============================================================================
 # General Settings
@@ -23,15 +21,19 @@ keep_temp_files: false
 
 
 # ============================================================================
-# Download Settings
+# Download & Auth Settings
 # ============================================================================
 
 # Path to cookie file for accessing premium/member-only content
-# Leave as null if not needed
-cookie_file: null
+cookie_file: "tools/BBDown/BBDown.data"
+
+# Auto-login behavior
+auto_login: true
+
+# Login type: 'web' or 'tv'
+login_type: "web"
 
 # Video quality for download: 480P, 720P, 1080P
-# Higher quality may improve ASR accuracy but increases download time
 video_quality: "720P"
 
 # Number of download threads (used by BBDown)
@@ -49,8 +51,10 @@ asr_engine: "funasr"
 # Default: paraformer-zh (optimized for Chinese)
 funasr_model: "paraformer-zh"
 
+# FunASR model path (recommended to move large models off C: drive)
+funasr_model_path: "D:/Funasr_model"
+
 # Whisper model size: tiny, base, small, medium, large
-# Larger models are more accurate but slower
 whisper_model: "base"
 
 # Language code for Whisper (e.g., zh, en, ja)
@@ -58,23 +62,24 @@ whisper_model: "base"
 language: null
 
 # Use INT8 quantization for FunASR (2-3x speed boost on CPU)
-# Slightly reduces accuracy (<5%) but significantly faster
 use_int8: false
 
 # Use ONNX Runtime for FunASR (3-4x speed boost on CPU)
-# Requires ONNX-compatible model
 use_onnx: false
 
 
 # ============================================================================
-# OCR (Optical Character Recognition) Settings
+# API Request Settings
 # ============================================================================
 
-# Enable OCR for hard subtitles (experimental feature)
-enable_ocr: false
+# API request interval (seconds) to avoid rate limits
+api_request_interval: 20
 
-# OCR engine: paddleocr, tesseract
-ocr_engine: "paddleocr"
+# Max attempts for API retries
+api_retry_max_attempts: 3
+
+# Wait time between retries (seconds)
+api_retry_wait_time: 20
 
 
 # ============================================================================
@@ -86,24 +91,11 @@ output_format: "txt"
 
 
 # ============================================================================
-# Example Configurations
+# Tool Paths (Optional)
 # ============================================================================
 
-# Example 1: Fast processing with INT8 quantization
-# asr_engine: "funasr"
-# use_int8: true
-# video_quality: "480P"
+# If null, the system will attempt to auto-detect from tools/ directory or PATH
+bbdown_path: null
+ffmpeg_path: null
+ffprobe_path: null
 
-# Example 2: High accuracy with larger Whisper model
-# asr_engine: "whisper"
-# whisper_model: "medium"
-# language: "zh"
-
-# Example 3: Maximum speed with ONNX Runtime
-# asr_engine: "funasr"
-# use_onnx: true
-# video_quality: "480P"
-
-# Example 4: Premium content access
-# cookie_file: "/path/to/cookie.txt"
-# video_quality: "1080P"
