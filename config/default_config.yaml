@@ -51,8 +51,8 @@ asr_engine: "funasr"
 # Default: paraformer-zh (optimized for Chinese)
 funasr_model: "paraformer-zh"
 
-# FunASR model path (recommended to move large models off C: drive)
-funasr_model_path: "D:/Funasr_model"
+# FunASR model path (store only models and caches outside the repo)
+funasr_model_path: "D:/Model/Funasr_model"
 
 # Whisper model size: tiny, base, small, medium, large
 whisper_model: "base"

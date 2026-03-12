@@ -21,8 +21,9 @@ class SentenceUnit:
 
 
 @dataclass
-class HostQuoteCandidate:
+class QuoteAnchor:
     quote_id: str
+    sentence_id: str
     start: float
     end: float
     text: str
@@ -31,27 +32,53 @@ class HostQuoteCandidate:
 
 
 @dataclass
-class NewsBlock:
-    block_id: str
+class TopicSegment:
+    segment_id: str
     start: float
     end: float
-    title_candidate: str
-    direct_scope_candidate: str
-    background_summary: str
-    host_view_summary_candidate: str
-    host_quote_candidates: list[HostQuoteCandidate] = field(default_factory=list)
+    start_sentence_id: str
+    end_sentence_id: str
+    segment_summary: str
+    retrieval_keywords: list[str] = field(default_factory=list)
+    host_view_summary: str = ""
+    quote_anchors: list[QuoteAnchor] = field(default_factory=list)
+    angle_type: str = "fact_update"
+    segment_role: str = "core_argument"
+    subscope_label: str = ""
     sentence_ids: list[str] = field(default_factory=list)
     confidence: float = 0.0
     review_status: str = "needs_review"
 
 
 @dataclass
-class PendingReview:
+class NewsTopic:
+    topic_id: str
+    canonical_topic: str
+    tracking_scope: str
+    retrieval_keywords: list[str] = field(default_factory=list)
+    host_overall_view_summary: str = ""
+    segments: list[TopicSegment] = field(default_factory=list)
+    review_status: str = "needs_review"
+    confidence: float = 0.0
+
+
+@dataclass
+class ReviewFlag:
     review_id: str
     review_type: str
     target_id: str
     reason: str
     candidate_options: list[str] = field(default_factory=list)
+
+
+@dataclass
+class ModelRun:
+    stage: str
+    backend: str
+    target_id: str
+    status: str = "completed"
+    reason: str = ""
+    confidence: float | None = None
 
 
 @dataclass
@@ -62,5 +89,7 @@ class EpisodeDraft:
     selected_track: dict[str, Any]
     processing: dict[str, Any]
     sentence_units: list[SentenceUnit] = field(default_factory=list)
-    news_blocks: list[NewsBlock] = field(default_factory=list)
-    pending_reviews: list[PendingReview] = field(default_factory=list)
+    news_topics: list[NewsTopic] = field(default_factory=list)
+    orphan_transition_sentence_ids: list[str] = field(default_factory=list)
+    review_flags: list[ReviewFlag] = field(default_factory=list)
+    model_runs: list[ModelRun] = field(default_factory=list)

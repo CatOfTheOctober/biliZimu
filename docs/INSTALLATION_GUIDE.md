@@ -67,3 +67,38 @@ pip install openai-whisper
 - [ ] `tools/ffmpeg/bin/ffmpeg.exe` 存在
 - [ ] `tools/BBDown/BBDown.data` 已生成（登录后）
 - [ ] `python 下载字幕.py` 可启动交互界面
+
+## 7. 第二流程模型配置
+
+如果你要使用 `episode_draft` 的本地/远程大模型能力，推荐在项目根目录创建 `.env`：
+
+```text
+MODELSCOPE_CACHE=D:\Model\Funasr_model\modelscope_cache
+OLLAMA_MODELS=D:\Model\ollama
+EPISODE_DRAFT_LOCAL_API_BASE=http://127.0.0.1:11434/v1
+EPISODE_DRAFT_LOCAL_MODEL=qwen2.5:3b
+EPISODE_DRAFT_LOCAL_API_KEY=
+EPISODE_DRAFT_API_BASE=https://api.deepseek.com/v1
+EPISODE_DRAFT_API_MODEL=deepseek-chat
+EPISODE_DRAFT_API_KEY=<your_key>
+```
+
+说明：
+
+- 只有模型和模型缓存放在 `D:\Model`
+- 项目产物仍然保留在仓库目录内
+- `episode_draft` 会自动读取项目根目录 `.env`
+
+本地模型准备：
+
+```powershell
+$env:OLLAMA_MODELS="D:\Model\ollama"
+ollama pull qwen2.5:3b
+ollama serve
+```
+
+运行第二流程：
+
+```bash
+python -m episode_draft draft-from-bundle output/<bundle_dir> --backend auto
+```

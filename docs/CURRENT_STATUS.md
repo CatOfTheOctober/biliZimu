@@ -48,7 +48,7 @@
 
 - API 字幕失败后可回退到 ASR
 - 已验证 `conda activate py311` 环境下可以正常调用本地 FunASR
-- 本地模型目录 `D:\Funasr_model` 已能被默认缓存路径复用
+- 本地模型目录 `D:\Model\Funasr_model` 已能被默认缓存路径复用
 
 ### 6. ASR 细粒度时间戳
 

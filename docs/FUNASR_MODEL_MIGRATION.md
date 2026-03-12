@@ -1,9 +1,9 @@
 # FunASR 模型迁移与文件说明
 
 ## 迁移目标
-- 将 ModelScope 已下载的 FunASR 相关模型从 `C:\Users\z\.cache\modelscope\hub\models\iic` 迁移到 `D:\Funasr_model`。
+- 将 ModelScope 已下载的 FunASR 相关模型从 `C:\Users\z\.cache\modelscope\hub\models\iic` 迁移到 `D:\Model\Funasr_model`。
 - 仅移动，不保留 C 盘副本，不创建软链接。
-- 后续新模型默认写入 `D:\Funasr_model\modelscope_cache`。
+- 后续新模型默认写入 `D:\Model\Funasr_model\modelscope_cache`。
 
 ## 本次已迁移目录
 1. `speech_seaco_paraformer_large_asr_nat-zh-cn-16k-common-vocab8404-pytorch`（ASR 主识别）
@@ -12,7 +12,7 @@
 
 ## 迁移后目录结构
 ```text
-D:\Funasr_model\
+D:\Model\Funasr_model\
   ├─ speech_seaco_paraformer_large_asr_nat-zh-cn-16k-common-vocab8404-pytorch
   ├─ speech_fsmn_vad_zh-cn-16k-common-pytorch
   ├─ punc_ct-transformer_cn-en-common-vocab471067-large
@@ -45,13 +45,13 @@ D:\Funasr_model\
 
 ## 环境变量配置（已设置）
 - 用户级环境变量：
-  - `MODELSCOPE_CACHE=D:\Funasr_model\modelscope_cache`
+  - `MODELSCOPE_CACHE=D:\Model\Funasr_model\modelscope_cache`
 - 说明：
   - 已写入 `HKCU\Environment`，对新开的终端生效。
   - 当前已运行终端可能需要重启后才会自动读取该值。
 
 ## 项目配置兼容性
-- 当前项目默认配置已是 `funasr_model_path: D:/Funasr_model`（见 `config/default_config.yaml` 和 `src/bilibili_extractor/core/config.py`）。
+- 当前项目默认配置已是 `funasr_model_path: D:/Model/Funasr_model`（见 `config/default_config.yaml` 和 `src/bilibili_extractor/core/config.py`）。
 - `FunASREngine` 会扫描该目录下子目录并自动匹配 ASR/VAD/标点模型，无需改代码。
 
 ## 迁移校验结果（本次执行）
@@ -65,10 +65,10 @@ D:\Funasr_model\
 ## 建议的复核命令
 ```powershell
 reg query HKCU\Environment /v MODELSCOPE_CACHE
-Get-ChildItem D:\Funasr_model
+Get-ChildItem D:\Model\Funasr_model
 ```
 
 如需在“当前终端会话”立即生效，可临时执行：
 ```powershell
-$env:MODELSCOPE_CACHE = "D:\Funasr_model\modelscope_cache"
+$env:MODELSCOPE_CACHE = "D:\Model\Funasr_model\modelscope_cache"
 ```

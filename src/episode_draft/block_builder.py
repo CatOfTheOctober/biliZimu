@@ -16,6 +16,16 @@ HARD_TRANSITION_MARKERS = (
     "最后",
 )
 
+PROPOSAL_TRANSITION_MARKERS = (
+    "这样看",
+    "结论很明显",
+    "那就只能",
+    "既然不能",
+    "所以我建议",
+    "或许中国可以",
+    "在中国唯一能够对应",
+)
+
 
 def text_signature(text: str) -> set[str]:
     cleaned = re.sub(r"[^\w\u4e00-\u9fff]+", "", text)
@@ -69,6 +79,8 @@ def should_start_new_block(
     block_context: str,
 ) -> bool:
     if candidate.text.startswith(HARD_TRANSITION_MARKERS) and len(current_block) >= 3:
+        return True
+    if candidate.text.startswith(PROPOSAL_TRANSITION_MARKERS) and len(current_block) >= 8:
         return True
 
     block_topic = block_context or current_block[-1].topic_hint

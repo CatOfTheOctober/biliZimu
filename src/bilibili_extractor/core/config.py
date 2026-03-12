@@ -37,7 +37,7 @@ class Config:
     # ASR settings
     asr_engine: str = field(default="funasr")
     funasr_model: str = field(default="paraformer-zh")
-    funasr_model_path: Optional[str] = field(default="D:/Funasr_model")
+    funasr_model_path: Optional[str] = field(default="D:/Model/Funasr_model")
     whisper_model: str = field(default="base")
     language: Optional[str] = field(default=None)
     use_int8: bool = field(default=False)

@@ -81,6 +81,7 @@ pytest -q
 - Cookie：`docs/COOKIE_GUIDE.md`
 - 结构：`docs/PROJECT_STRUCTURE.md`
 - 状态：`docs/CURRENT_STATUS.md`
+- 第二流程模型接入：`docs/EPISODE_DRAFT_LLM_SETUP.md`
 
 ## 逐期回看模块
 
@@ -104,3 +105,36 @@ python review.py list-sources
 ```
 
 制作规范见：[docs/episode_workflow.md](docs/episode_workflow.md)
+
+## 第二流程模型配置
+
+`episode_draft` 现在支持从项目根目录 `.env` 自动读取本地和远程模型配置。推荐做法：
+
+1. 复制 `.env.example` 为 `.env`
+2. 填写 `DeepSeek` 的 `EPISODE_DRAFT_API_KEY`
+3. 确认本地 `Ollama` 正在运行，并已拉取 `qwen2.5:3b`
+
+推荐环境变量：
+
+```text
+MODELSCOPE_CACHE=D:\Model\Funasr_model\modelscope_cache
+OLLAMA_MODELS=D:\Model\ollama
+EPISODE_DRAFT_LOCAL_API_BASE=http://127.0.0.1:11434/v1
+EPISODE_DRAFT_LOCAL_MODEL=qwen2.5:3b
+EPISODE_DRAFT_API_BASE=https://api.deepseek.com/v1
+EPISODE_DRAFT_API_MODEL=deepseek-chat
+EPISODE_DRAFT_API_KEY=<your_key>
+```
+
+运行示例：
+
+```bash
+python -m episode_draft draft-from-bundle output/<bundle_dir> --backend auto
+python -m episode_draft doctor
+```
+
+- `auto`：优先本地 `Qwen2.5:3b`，必要时再走 `DeepSeek`
+- `local`：只用本地模型
+- `api`：只用远程模型
+- `heuristic`：完全不用大模型
+- `doctor`：检查 `.env`、本地 `Ollama` 和远程 `DeepSeek` 是否可用
