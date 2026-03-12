@@ -370,6 +370,12 @@ class SubtitleFetcher:
             return None
     
     def fetch_subtitle(self, bvid: str, url: str = "") -> Optional[List[TextSegment]]:
+        details = self.fetch_subtitle_details(bvid, url)
+        if not details:
+            return None
+        return details.get("segments")
+
+    def fetch_subtitle_details(self, bvid: str, url: str = "") -> Optional[Dict[str, Any]]:
         """使用 B 站 API 获取字幕（AI 字幕优先）。
         
         完全同步“下载字幕.py”逻辑：
@@ -382,7 +388,7 @@ class SubtitleFetcher:
             url: 完整视频 URL
             
         Returns:
-            TextSegment 列表，如果获取失败返回 None
+            包含标准字幕片段、视频元信息和原始字幕数据的字典；失败返回 None
         """
         if not self.bilibili_api:
             self.logger.warning("BilibiliAPI 未初始化")
@@ -414,12 +420,40 @@ class SubtitleFetcher:
             # 我们只需要将这些 body 里的片段转换成 TextSegment 对象
             from bilibili_extractor.modules.subtitle_parser import SubtitleParser
             segments = SubtitleParser.parse_subtitle({'body': subtitles_data})
+
+            selected_track = {
+                "track_id": "selected_subtitle",
+                "track_type": "subtitle",
+                "source": "platform_ai_subtitle" if result.get("metadata", {}).get("lan", "").startswith("ai-") else "platform_subtitle",
+                "label": result.get("metadata", {}).get("lan_doc") or result.get("metadata", {}).get("lan") or "subtitle",
+                "language": result.get("metadata", {}).get("lan"),
+                "is_ai_generated": result.get("metadata", {}).get("lan", "").startswith("ai-"),
+                "available_subtitles": result.get("available_subtitles", []),
+            }
             
             self.logger.info(f"成功同步获取 API 字幕，共 {len(segments)} 条片段")
-            return segments
+            return {
+                "segments": segments,
+                "video_info": video_info,
+                "subtitle_result": result,
+                "selected_track": selected_track,
+            }
             
         except Exception as e:
             self.logger.error(f"API 字幕获取失败: {e}")
+            return None
+
+    def get_video_metadata(self, bvid: str, url: str = "") -> Optional[Dict[str, Any]]:
+        """Fetch normalized page metadata without downloading subtitles."""
+        if not self.bilibili_api:
+            return None
+        try:
+            from .url_validator import URLValidator
+
+            page = URLValidator.extract_page_number(url) if url else 1
+            return self.bilibili_api.get_video_info(bvid, page)
+        except Exception as e:
+            self.logger.warning(f"获取视频元信息失败: {e}")
             return None
 
 

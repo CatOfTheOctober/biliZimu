@@ -50,9 +50,8 @@ dev = [
 [project.scripts]
 bilibili-extractor = "bilibili_extractor.__main__:main"
 
-[project.urls]
-Homepage = "https://github.com/bilibili-extractor/bilibili-extractor"
-Repository = "https://github.com/bilibili-extractor/bilibili-extractor"
+[tool.setuptools]
+package-dir = {"" = "src"}
 
 [tool.setuptools.packages.find]
 where = ["src"]

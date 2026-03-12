@@ -324,10 +324,14 @@ class BilibiliAPI:
                 'bvid': video_data.get('bvid'),
                 'cid': cid,
                 'title': video_data.get('title'),
+                'desc': video_data.get('desc', ''),
+                'pubdate': video_data.get('pubdate'),
+                'owner_name': video_data.get('owner', {}).get('name', ''),
                 'pic': video_data.get('pic'),
                 'duration': video_data.get('duration'),
                 'pages': pages,  # 保留pages信息
                 'page_count': len(pages) if pages else 1,
+                'page': actual_page,
             }
             
             # 使用实际的page作为缓存键（避免缓存污染）
@@ -732,7 +736,12 @@ class BilibiliAPI:
             return url
     
     @retry_on_error(max_retries=3, backoff_factor=0.5)
-    def get_subtitle_with_ai_fallback(self, bvid: str, cid: int) -> Dict[str, Any]:
+    def get_subtitle_with_ai_fallback(
+        self,
+        bvid: str,
+        cid: int,
+        aid: Optional[int] = None,
+    ) -> Dict[str, Any]:
         """获取字幕，优先获取 AI 字幕（完全复制 JS 版本逻辑）。
         
         改进版本：
@@ -745,6 +754,7 @@ class BilibiliAPI:
         Args:
             bvid: 视频 bvid
             cid: 视频 cid
+            aid: 视频 aid；如果未提供则尝试通过 bvid 反查
             
         Returns:
             包含字幕数据的字典：
@@ -763,14 +773,17 @@ class BilibiliAPI:
         try:
             self.logger.info(f"获取字幕，bvid={bvid}, cid={cid}")
             
-            # 步骤1：从 bvid 获取 aid（对应 JS 版本逻辑）
-            self.logger.debug("步骤1：从 bvid 获取 aid")
-            try:
-                aid = self.get_aid_from_bvid(bvid)
-                self.logger.info(f"成功获取 aid: {aid}")
-            except Exception as e:
-                self.logger.warning(f"获取 aid 失败: {e}，将使用 bvid 方式")
-                aid = None
+            # 步骤1：优先使用已知 aid，否则从 bvid 获取 aid
+            if aid is None:
+                self.logger.debug("步骤1：从 bvid 获取 aid")
+                try:
+                    aid = self.get_aid_from_bvid(bvid)
+                    self.logger.info(f"成功获取 aid: {aid}")
+                except Exception as e:
+                    self.logger.warning(f"获取 aid 失败: {e}，将使用 bvid 方式")
+                    aid = None
+            else:
+                self.logger.debug(f"步骤1：使用调用方提供的 aid={aid}")
             
             # 步骤2：获取播放器信息（包含字幕列表）
             self.logger.debug("步骤2：获取播放器信息")
@@ -880,10 +893,12 @@ class BilibiliAPI:
             return {
                 'success': True,
                 'metadata': metadata,
+                'available_subtitles': subtitles,
                 'subtitles': subtitle_body,
                 'subtitle_text_srt': subtitle_text_srt,  # SRT 格式字幕
                 'subtitle_text_txt': subtitle_text_txt,  # TXT 格式字幕
                 'subtitle_text': subtitle_text_txt,      # 默认使用 TXT 格式
+                'raw_subtitle_data': subtitle_data,
             }
             
         except Exception as e:

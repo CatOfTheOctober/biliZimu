@@ -4,7 +4,14 @@ import json
 import re
 from typing import List
 from datetime import datetime
-from bilibili_extractor.core.models import TextSegment, ExtractionResult
+from bilibili_extractor.core.models import (
+    TextSegment,
+    ExtractionResult,
+    TranscriptBundle,
+    TranscriptTrack,
+    AssetManifest,
+    AssetRecord,
+)
 
 
 class OutputFormatter:
@@ -93,6 +100,40 @@ class OutputFormatter:
         return json.dumps(data, ensure_ascii=False, indent=2)
 
     @staticmethod
+    def to_transcript_bundle(bundle: TranscriptBundle) -> str:
+        """Convert a transcript bundle into its stable JSON representation."""
+        data = {
+            "schema_version": bundle.schema_version,
+            "video": bundle.video,
+            "tracks": [
+                OutputFormatter._track_to_dict(track)
+                for track in bundle.tracks
+            ],
+            "selected_track": bundle.selected_track,
+            "quality_flags": bundle.quality_flags,
+            "processing": bundle.processing,
+        }
+        return json.dumps(data, ensure_ascii=False, indent=2)
+
+    @staticmethod
+    def to_asset_manifest(manifest: AssetManifest) -> str:
+        """Convert an asset manifest into JSON."""
+        data = {
+            "schema_version": manifest.schema_version,
+            "bundle_id": manifest.bundle_id,
+            "video_id": manifest.video_id,
+            "created_at": manifest.created_at,
+            "status": manifest.status,
+            "failure_stage": manifest.failure_stage,
+            "failure_reason": manifest.failure_reason,
+            "assets": [
+                OutputFormatter._asset_record_to_dict(asset)
+                for asset in manifest.assets
+            ],
+        }
+        return json.dumps(data, ensure_ascii=False, indent=2)
+
+    @staticmethod
     def to_txt(segments: List[TextSegment]) -> str:
         """Convert segments to plain text.
 
@@ -133,6 +174,40 @@ class OutputFormatter:
         minutes = int((seconds % 3600) // 60)
         secs = seconds % 60
         return f"{hours:02d}:{minutes:02d}:{secs:06.3f}"
+
+    @staticmethod
+    def _track_to_dict(track: TranscriptTrack) -> dict:
+        return {
+            "track_id": track.track_id,
+            "track_type": track.track_type,
+            "source": track.source,
+            "label": track.label,
+            "language": track.language,
+            "is_ai_generated": track.is_ai_generated,
+            "segments": [
+                {
+                    "start_time": segment.start_time,
+                    "end_time": segment.end_time,
+                    "text": segment.text,
+                    "confidence": segment.confidence,
+                    "source": segment.source,
+                }
+                for segment in track.segments
+            ],
+            "metadata": track.metadata,
+        }
+
+    @staticmethod
+    def _asset_record_to_dict(asset: AssetRecord) -> dict:
+        return {
+            "asset_id": asset.asset_id,
+            "asset_type": asset.asset_type,
+            "path": asset.path,
+            "origin": asset.origin,
+            "checksum": asset.checksum,
+            "created_at": asset.created_at,
+            "metadata": asset.metadata,
+        }
 
     @staticmethod
     def to_markdown(result: ExtractionResult) -> str:

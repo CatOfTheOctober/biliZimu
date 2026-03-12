@@ -80,3 +80,27 @@ pytest -q
 - 安装：`docs/INSTALLATION_GUIDE.md`
 - Cookie：`docs/COOKIE_GUIDE.md`
 - 结构：`docs/PROJECT_STRUCTURE.md`
+- 状态：`docs/CURRENT_STATUS.md`
+
+## 逐期回看模块
+
+这个仓库现在额外包含一个本地优先的“《睡前消息》逐期回看”骨架，目标是把单期节目整理为结构化数据，并导出可直接用于录制的视频资料包。
+
+核心原则：
+
+- `1` 条你的新视频对应 `1` 期原节目。
+- 该期中的每条新闻都建卡，但只追踪原节目提到的直接主线。
+- 后续信息源只采用官方来源与头部主流媒体补充。
+- 信息不足时明确写“公开信息不足”，不用小道消息补空。
+
+常用命令：
+
+```bash
+python -m episode_draft draft-from-bundle output/<bundle_dir>
+python review.py init samples/my_episode.json
+python review.py validate samples/episode_2019-11-07.sample.json
+python review.py export samples/episode_2019-11-07.sample.json --output output/review_demo
+python review.py list-sources
+```
+
+制作规范见：[docs/episode_workflow.md](docs/episode_workflow.md)

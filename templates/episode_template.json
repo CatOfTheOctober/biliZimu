@@ -1,0 +1,59 @@
+{
+  "project_title": "《睡前消息》逐期回看",
+  "source_policy": "official_first_mainstream_media_only",
+  "episode": {
+    "title": "请填写原节目标题",
+    "air_date": "2019-11-07",
+    "source_url": "https://www.bilibili.com/video/请填写",
+    "transcript_status": "platform_subtitle",
+    "transcript_excerpt": "填写该期节目字幕摘要或关键片段。",
+    "news_summary": "用一句话概述这一期提到的全部新闻。",
+    "recording_cutoff_date": "2026-03-12",
+    "segments": [
+      {
+        "title": "新闻 1 段落标题",
+        "start": "00:00:00",
+        "end": "00:04:30",
+        "summary": "这一段主要讲什么。"
+      }
+    ]
+  },
+  "news_items": [
+    {
+      "title": "新闻标题",
+      "direct_scope": "只写原节目里的直接主线，不要扩展成整个行业。",
+      "original_background": "当时发生了什么，为什么进入这期节目。",
+      "host_quote": "主持人关键原话摘录。",
+      "host_view_summary": "用中性语言概括主持人当时的主要判断。",
+      "current_status": "截至录制当天，这件事走到了哪里。",
+      "evidence_status": "sufficient",
+      "allowed_sources_used": [
+        "official",
+        "新华社"
+      ],
+      "timeline": [
+        {
+          "date": "2020-01-15",
+          "event": "后续关键节点描述。",
+          "source": {
+            "source_name": "新华社",
+            "source_type": "mainstream_media",
+            "source_url": "https://www.news.cn/example",
+            "source_label": "新华社 2020-01-15",
+            "published_date": "2020-01-15"
+          },
+          "relation_to_host_view": "这个节点如何与主持人当时的观点形成并列关系。",
+          "relevance_note": "说明为什么它仍然属于原新闻的直接主线。",
+          "verified": true
+        }
+      ],
+      "clip_candidates": [
+        {
+          "start": "00:01:20",
+          "end": "00:01:45",
+          "usage_note": "主持人第一次提出该新闻核心判断。"
+        }
+      ]
+    }
+  ]
+}

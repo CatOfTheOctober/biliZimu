@@ -1,0 +1,144 @@
+{
+  "project_title": "《睡前消息》逐期回看",
+  "source_policy": "official_first_mainstream_media_only",
+  "episode": {
+    "title": "2019-11-07 睡前消息 样板结构",
+    "air_date": "2019-11-07",
+    "source_url": "https://www.bilibili.com/video/BV_SAMPLE",
+    "transcript_status": "platform_subtitle",
+    "transcript_excerpt": "这里保留该期节目字幕中的摘要或关键片段，作为后续人工核对入口。",
+    "news_summary": "本样例仅演示单期节目包结构，不代表真实节目内容。",
+    "recording_cutoff_date": "2026-03-12",
+    "segments": [
+      {
+        "title": "新闻 1",
+        "start": "00:00:00",
+        "end": "00:03:50",
+        "summary": "第一条新闻段落。"
+      },
+      {
+        "title": "新闻 2",
+        "start": "00:03:50",
+        "end": "00:07:20",
+        "summary": "第二条新闻段落。"
+      }
+    ]
+  },
+  "news_items": [
+    {
+      "title": "样例新闻：地方国资平台风险处置",
+      "direct_scope": "只跟踪该案例本身的处置进展和公开披露，不扩展到全国所有地方债问题。",
+      "original_background": "这里描述节目播出时这条新闻为什么重要，以及它在当时的讨论焦点。",
+      "host_quote": "这里填写主持人的关键原话摘录，后续必须回看原视频核对。",
+      "host_view_summary": "用中性语言概括主持人当时对该新闻的判断或关注点。",
+      "current_status": "截至 2026-03-12，公开材料显示该事件已经进入新的阶段，但仍需按原新闻主线表述。",
+      "evidence_status": "sufficient",
+      "allowed_sources_used": [
+        "official",
+        "新华社",
+        "财新"
+      ],
+      "timeline": [
+        {
+          "date": "2020-03-01",
+          "event": "主管部门发布与该事件直接相关的公开说明。",
+          "source": {
+            "source_name": "某市人民政府",
+            "source_type": "official",
+            "source_url": "https://www.example.gov.cn/report-1",
+            "source_label": "某市政府 2020-03-01",
+            "published_date": "2020-03-01"
+          },
+          "relation_to_host_view": "这是节目播出后第一条官方层面的后续进展。",
+          "relevance_note": "仍然是该新闻的直接后续，没有扩展到其他城市或行业。",
+          "verified": true
+        },
+        {
+          "date": "2021-08-20",
+          "event": "新华社对处置阶段进行回顾报道。",
+          "source": {
+            "source_name": "新华社",
+            "source_type": "mainstream_media",
+            "source_url": "https://www.news.cn/example-2",
+            "source_label": "新华社 2021-08-20",
+            "published_date": "2021-08-20"
+          },
+          "relation_to_host_view": "补充了公开叙事中的关键转折。",
+          "relevance_note": "仍围绕同一事件主线，而非扩展到一般性评论。",
+          "verified": true
+        },
+        {
+          "date": "2023-05-11",
+          "event": "主流媒体对阶段结果进行总结。",
+          "source": {
+            "source_name": "财新",
+            "source_type": "mainstream_media",
+            "source_url": "https://www.caixin.com/example-3",
+            "source_label": "财新 2023-05-11",
+            "published_date": "2023-05-11"
+          },
+          "relation_to_host_view": "提供了可供并列展示的后续事实材料。",
+          "relevance_note": "仍服务于原新闻直接主线。",
+          "verified": true
+        }
+      ],
+      "clip_candidates": [
+        {
+          "start": "00:00:40",
+          "end": "00:01:10",
+          "usage_note": "主持人对第一条新闻的核心评论。"
+        }
+      ]
+    },
+    {
+      "title": "样例新闻：教育政策执行观察",
+      "direct_scope": "只跟踪该政策后续公开执行情况，不扩展成整体教育制度评估。",
+      "original_background": "说明当时新闻事件、争议点和节目为什么提到它。",
+      "host_quote": "这里填写主持人的相关原话摘录。",
+      "host_view_summary": "中性概括主持人的主要评论。",
+      "current_status": "截至 2026-03-12，官方和主流媒体只披露到阶段性情况，部分信息仍不足。",
+      "evidence_status": "insufficient_public_info",
+      "allowed_sources_used": [
+        "official",
+        "中国新闻网"
+      ],
+      "timeline": [
+        {
+          "date": "2020-09-10",
+          "event": "教育主管部门发布与该政策执行有关的公开文件。",
+          "source": {
+            "source_name": "教育部",
+            "source_type": "official",
+            "source_url": "http://www.moe.gov.cn/example-4",
+            "source_label": "教育部 2020-09-10",
+            "published_date": "2020-09-10"
+          },
+          "relation_to_host_view": "对应节目里关于执行落地的关注点。",
+          "relevance_note": "只覆盖该政策的直接后续执行信息。",
+          "verified": true
+        },
+        {
+          "date": "2022-04-30",
+          "event": "中国新闻网对该政策执行现状做公开报道。",
+          "source": {
+            "source_name": "中国新闻网",
+            "source_type": "mainstream_media",
+            "source_url": "https://www.chinanews.com.cn/example-5",
+            "source_label": "中新网 2022-04-30",
+            "published_date": "2022-04-30"
+          },
+          "relation_to_host_view": "补充阶段性效果，但不足以得出完整结论。",
+          "relevance_note": "没有扩展到整个教育体系。",
+          "verified": true
+        }
+      ],
+      "clip_candidates": [
+        {
+          "start": "00:04:20",
+          "end": "00:04:50",
+          "usage_note": "主持人对第二条新闻的评论。"
+        }
+      ]
+    }
+  ]
+}

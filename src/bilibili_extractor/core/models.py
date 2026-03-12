@@ -4,7 +4,7 @@ This module defines the core data structures used throughout the extraction proc
 """
 
 from dataclasses import dataclass, field
-from typing import List, Dict, Any
+from typing import List, Dict, Any, Optional
 
 
 @dataclass
@@ -24,6 +24,13 @@ class VideoInfo:
     duration: int  # 秒
     has_subtitle: bool
     url: str
+    description: str = ""
+    published_at: Optional[str] = None
+    uploader: str = ""
+    cid: Optional[int] = None
+    page: int = 1
+    pages: List[Dict[str, Any]] = field(default_factory=list)
+    cover_url: str = ""
 
 
 @dataclass
@@ -66,3 +73,56 @@ class ExtractionResult:
     method: str  # subtitle/asr/hybrid
     processing_time: float
     metadata: Dict[str, Any] = field(default_factory=dict)
+
+
+@dataclass
+class TranscriptTrack:
+    """A normalized transcript track available for downstream processing."""
+
+    track_id: str
+    track_type: str
+    source: str
+    label: str
+    language: Optional[str] = None
+    is_ai_generated: bool = False
+    segments: List[TextSegment] = field(default_factory=list)
+    metadata: Dict[str, Any] = field(default_factory=dict)
+
+
+@dataclass
+class TranscriptBundle:
+    """Primary output contract for the acquisition and normalization stage."""
+
+    schema_version: str
+    video: Dict[str, Any]
+    tracks: List[TranscriptTrack]
+    selected_track: str
+    quality_flags: Dict[str, Any]
+    processing: Dict[str, Any]
+
+
+@dataclass
+class AssetRecord:
+    """A single archived asset entry for replayable acquisition outputs."""
+
+    asset_id: str
+    asset_type: str
+    path: str
+    origin: str
+    checksum: str
+    created_at: str
+    metadata: Dict[str, Any] = field(default_factory=dict)
+
+
+@dataclass
+class AssetManifest:
+    """Manifest of all archived assets generated for one video."""
+
+    schema_version: str
+    bundle_id: str
+    video_id: str
+    created_at: str
+    status: str = "completed"
+    failure_stage: Optional[str] = None
+    failure_reason: str = ""
+    assets: List[AssetRecord] = field(default_factory=list)

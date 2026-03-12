@@ -1,7 +1,8 @@
 """Main text extractor controller."""
 
 import time
-from typing import Optional, Callable, List
+from datetime import datetime
+from typing import Optional, Callable, List, Dict, Any
 from pathlib import Path
 
 from bilibili_extractor.core.config import Config
@@ -10,7 +11,7 @@ from bilibili_extractor.core.exceptions import SubtitleNotFoundError
 from bilibili_extractor.modules.url_validator import URLValidator, URLValidationError
 from bilibili_extractor.modules.video_downloader import VideoDownloader, DownloadError
 from bilibili_extractor.modules.audio_extractor import AudioExtractor, AudioExtractionError
-from bilibili_extractor.modules.subtitle_fetcher import SubtitleFetcher, SubtitleNotFoundError
+from bilibili_extractor.modules.subtitle_fetcher import SubtitleFetcher
 from bilibili_extractor.modules.asr_engine import ASREngine, FunASREngine, WhisperEngine, ASRError
 from bilibili_extractor.modules.auth_manager import AuthManager
 from bilibili_extractor.utils.logger import Logger
@@ -78,7 +79,144 @@ class TextExtractor:
             self.logger.warning("ASR functionality will not be available. Only videos with subtitles can be processed.")
             return None
 
-    def extract(self, url: str, progress_callback: Optional[Callable] = None, force_asr: bool = False) -> ExtractionResult:
+    def _build_video_info(
+        self,
+        video_id: str,
+        url: str,
+        video_metadata: Optional[Dict[str, Any]],
+        has_subtitle: bool,
+    ) -> VideoInfo:
+        metadata = video_metadata or {}
+        published_at = metadata.get("pubdate")
+        if published_at is not None:
+            try:
+                published_at = datetime.utcfromtimestamp(int(published_at)).isoformat() + "Z"
+            except Exception:
+                published_at = str(published_at)
+
+        return VideoInfo(
+            video_id=video_id,
+            title=metadata.get("title", ""),
+            duration=int(metadata.get("duration", 0) or 0),
+            has_subtitle=has_subtitle,
+            url=url,
+            description=metadata.get("desc", ""),
+            published_at=published_at,
+            uploader=metadata.get("owner_name", ""),
+            cid=metadata.get("cid"),
+            page=int(metadata.get("page", 1) or 1),
+            pages=list(metadata.get("pages", [])),
+            cover_url=metadata.get("pic", ""),
+        )
+
+    def _archive_extraction(
+        self,
+        result: ExtractionResult,
+        artifact_dir: Path,
+        video_path: Optional[Path],
+        audio_path: Optional[Path],
+        subtitle_details: Optional[Dict[str, Any]],
+        video_metadata: Optional[Dict[str, Any]],
+    ) -> Dict[str, Any]:
+        from bilibili_extractor.modules.acquisition_bundle import AcquisitionBundleBuilder
+
+        builder = AcquisitionBundleBuilder(self.config)
+        subtitle_result = (subtitle_details or {}).get("subtitle_result", {})
+        return builder.export(
+            result=result,
+            output_root=artifact_dir,
+            raw_video_path=video_path,
+            raw_audio_path=audio_path,
+            raw_subtitle_payload=subtitle_result.get("raw_subtitle_data") or subtitle_result or None,
+            raw_video_metadata=video_metadata,
+            selected_track_metadata=(subtitle_details or {}).get("selected_track"),
+        )
+
+    def _archive_failure(
+        self,
+        artifact_dir: Path,
+        video_id: str,
+        title: str,
+        failure_stage: str,
+        failure_reason: str,
+        video_path: Optional[Path],
+        subtitle_details: Optional[Dict[str, Any]],
+        video_metadata: Optional[Dict[str, Any]],
+    ) -> Dict[str, Any]:
+        from bilibili_extractor.modules.acquisition_bundle import AcquisitionBundleBuilder
+
+        builder = AcquisitionBundleBuilder(self.config)
+        subtitle_result = (subtitle_details or {}).get("subtitle_result", {})
+        return builder.export_failure(
+            output_root=artifact_dir,
+            video_id=video_id,
+            title=title,
+            raw_video_path=video_path,
+            raw_subtitle_payload=subtitle_result.get("raw_subtitle_data") or subtitle_result or None,
+            raw_video_metadata=video_metadata,
+            failure_stage=failure_stage,
+            failure_reason=failure_reason,
+        )
+
+    def _fetch_video_metadata(self, video_id: str, url: str) -> Optional[Dict[str, Any]]:
+        if not hasattr(self.subtitle_fetcher, "get_video_metadata"):
+            return None
+        try:
+            return self.subtitle_fetcher.get_video_metadata(video_id, url)
+        except Exception as e:
+            self.logger.warning(f"Failed to fetch video metadata: {e}")
+            return None
+
+    def _fetch_subtitle_details(self, video_id: str, url: str) -> Dict[str, Any]:
+        fetch_method = getattr(self.subtitle_fetcher, "fetch_subtitle_details", None)
+        if not callable(fetch_method):
+            raise SubtitleNotFoundError("SubtitleFetcher does not provide fetch_subtitle_details")
+
+        details = fetch_method(video_id, url)
+        if not isinstance(details, dict):
+            raise SubtitleNotFoundError("API subtitle details are unavailable")
+
+        segments = details.get("segments")
+        if not isinstance(segments, list) or not segments:
+            raise SubtitleNotFoundError("API获取字幕失败。")
+        return details
+
+    def _build_subtitle_result(
+        self,
+        video_id: str,
+        url: str,
+        segments: List[Any],
+        video_metadata: Optional[Dict[str, Any]],
+        subtitle_details: Optional[Dict[str, Any]],
+        processing_time: float,
+    ) -> ExtractionResult:
+        video_info = self._build_video_info(
+            video_id=video_id,
+            url=url,
+            video_metadata=video_metadata,
+            has_subtitle=True,
+        )
+        return ExtractionResult(
+            video_info=video_info,
+            segments=segments,
+            method="subtitle",
+            processing_time=processing_time,
+            metadata={
+                "segment_count": len(segments),
+                "extraction_method": "subtitle",
+                "source": "api",
+                "subtitle_kind": "ai" if (subtitle_details or {}).get("selected_track", {}).get("is_ai_generated") else "official",
+                "video_metadata": video_metadata or {},
+            },
+        )
+
+    def extract(
+        self,
+        url: str,
+        progress_callback: Optional[Callable] = None,
+        force_asr: bool = False,
+        artifact_dir: Optional[Path] = None,
+    ) -> ExtractionResult:
         """从URL中提取文本内容。
         
         Args:
@@ -93,6 +231,10 @@ class TextExtractor:
             SubtitleNotFoundError: 如果未找到 API 字幕且 force_asr 为 False
         """
         start_time = time.time()
+        video_path = None
+        audio_path = None
+        subtitle_details = None
+        video_metadata = None
         
         try:
             # 1. 验证URL (Requirement 1.1)
@@ -104,64 +246,65 @@ class TextExtractor:
             
             video_id = URLValidator.extract_video_id(url)
             self.logger.info(f"目标视频: {video_id}")
-            
-            # --- 字幕获取逻辑 ---
-            if not force_asr:
-                # 仅在非强制 ASR 模式下尝试获取 API 字幕
-                self.logger.info("尝试从 Bilibili API 直接获取字幕 (包含 AI 字幕)...")
-                try:
-                    segments = self.subtitle_fetcher.fetch_subtitle(video_id, url)
-                    if segments:
-                        self.logger.info(f"成功获取 API 字幕! 共 {len(segments)} 条片段")
-                        
-                        # 生成结果并立即返回，跳过后续下载和 ASR
-                        processing_time = time.time() - start_time
-                        result = ExtractionResult(
-                            video_info=VideoInfo(
-                                video_id=video_id,
-                                title="",  # 暂时为空
-                                duration=0,
-                                has_subtitle=True,
-                                url=url
-                            ),
-                            segments=segments,
-                            method="subtitle",
-                            processing_time=processing_time,
-                            metadata={
-                                "segment_count": len(segments),
-                                "extraction_method": "subtitle",
-                                "source": "api"
-                            }
-                        )
-                        return result
-                    else:
-                        # 抛出异常，由 CLI 层进行交互询问
-                        raise SubtitleNotFoundError("API获取字幕失败。")
-                except SubtitleNotFoundError:
-                    raise
-                except Exception as e:
-                    raise SubtitleNotFoundError(f"API获取字幕遇到错误: {e}")
-            else:
-                self.logger.info("force_asr=True，跳过字幕获取，直接进入视频下载与 ASR 流程。")
-            # --- 结束字幕获取逻辑 ---
+            video_metadata = self._fetch_video_metadata(video_id, url)
 
-            # Check if ASR engine is available
-            
-            # 2. 下载视频 (Requirement 3.1)
+            # 2. 下载视频 (硬前置原始资产)
             self.logger.info("Step 2: 下载视频")
             video_path = self.video_downloader.download(video_id, progress_callback)
             self.logger.info(f"视频已下载: {video_path}")
             self.resource_manager.register_file(video_path)
-            # 3. 提取音频 (Requirement 4.1)
+            
+            if not force_asr:
+                self.logger.info("Step 3: 尝试通过 API 获取字幕 (AI 字幕优先)")
+                try:
+                    subtitle_details = self._fetch_subtitle_details(video_id, url)
+                    if subtitle_details.get("video_info"):
+                        video_metadata = subtitle_details.get("video_info")
+                    segments = subtitle_details["segments"]
+                    self.logger.info(f"成功获取 API 字幕! 共 {len(segments)} 条片段")
+
+                    processing_time = time.time() - start_time
+                    result = self._build_subtitle_result(
+                        video_id=video_id,
+                        url=url,
+                        segments=segments,
+                        video_metadata=video_metadata,
+                        subtitle_details=subtitle_details,
+                        processing_time=processing_time,
+                    )
+                    if artifact_dir is not None:
+                        archive_info = self._archive_extraction(
+                            result=result,
+                            artifact_dir=artifact_dir,
+                            video_path=video_path,
+                            audio_path=None,
+                            subtitle_details=subtitle_details,
+                            video_metadata=video_metadata,
+                        )
+                        result.metadata["artifact_bundle_dir"] = str(archive_info["bundle_dir"])
+                        result.metadata["artifact_manifest_path"] = str(archive_info["manifest_path"])
+                    return result
+                except SubtitleNotFoundError as e:
+                    if artifact_dir is not None:
+                        failed_info = self._archive_failure(
+                            artifact_dir=artifact_dir,
+                            video_id=video_id,
+                            title=(video_metadata or {}).get("title", video_id),
+                            failure_stage="subtitle_fetch",
+                            failure_reason=str(e),
+                            video_path=video_path,
+                            subtitle_details=subtitle_details,
+                            video_metadata=video_metadata,
+                        )
+                        self.logger.warning(f"字幕获取失败，失败包已写入: {failed_info['bundle_dir']}")
+                    raise
+
             self.logger.info("Step 3: 提取音频")
             audio_path = self.audio_extractor.extract(video_path)
             self.logger.info(f"音频已提取: {audio_path}")
             self.resource_manager.register_file(audio_path)
             
-            # 4. ASR识别 (Requirement 5.1)
             self.logger.info(f"Step 4: 运行 ASR识别 ({self.config.asr_engine})")
-            
-            # 保护：如果 ASR 引擎初始化失败且运行到这一步，说明确实需要 ASR 但不可用
             if self.asr_engine is None:
                 error_msg = (
                     f"No ASR engine available for video {video_id}.\n"
@@ -175,13 +318,9 @@ class TextExtractor:
             try:
                 segments = self.asr_engine.transcribe(audio_path, progress_callback)
                 self.logger.info(f"ASR 识别完成: {len(segments)} segments")
-                
-                # 确保ASR生成的segments的source为'asr'
                 for segment in segments:
                     segment.source = 'asr'
-                    
             except FileNotFoundError as e:
-                # ASR library not installed
                 error_msg = (
                     f"💔 ASR 本地模型库未安装呐: {str(e)}\n"
                     f"👉 请手动配置好网络环境后执行安装指令:\n"
@@ -192,40 +331,85 @@ class TextExtractor:
                 self.logger.error(error_msg)
                 raise ASRError(error_msg)
             
-            method = "asr"
-            
-            # 5. 计算处理时间 (Requirement 8.2)
             processing_time = time.time() - start_time
-            
-            # 6. 生成结果 (Requirement 7.1)
             self.logger.info("Step 5: Generating extraction result")
+            video_info = self._build_video_info(
+                video_id=video_id,
+                url=url,
+                video_metadata=video_metadata,
+                has_subtitle=False,
+            )
             result = ExtractionResult(
-                video_info=VideoInfo(
-                    video_id=video_id,
-                    title="",  # Will be populated in future tasks
-                    duration=0,  # Will be populated in future tasks
-                    has_subtitle=False,
-                    url=url
-                ),
+                video_info=video_info,
                 segments=segments,
-                method=method,
+                method="asr",
                 processing_time=processing_time,
                 metadata={
                     "segment_count": len(segments),
-                    "extraction_method": method,
-                    "asr_engine": self.config.asr_engine if method == "asr" else None
+                    "extraction_method": "asr",
+                    "asr_engine": self.config.asr_engine,
+                    "video_metadata": video_metadata or {},
                 }
             )
-            
+
+            if artifact_dir is not None:
+                archive_info = self._archive_extraction(
+                    result=result,
+                    artifact_dir=artifact_dir,
+                    video_path=video_path,
+                    audio_path=audio_path,
+                    subtitle_details={
+                        "selected_track": {
+                            "track_id": "selected_asr",
+                            "track_type": "asr",
+                            "source": "asr",
+                            "label": "ASR",
+                            "language": self.config.language,
+                            "is_ai_generated": False,
+                            "asr_engine": self.config.asr_engine,
+                        }
+                    },
+                    video_metadata=video_metadata,
+                )
+                result.metadata["artifact_bundle_dir"] = str(archive_info["bundle_dir"])
+                result.metadata["artifact_manifest_path"] = str(archive_info["manifest_path"])
+
             self.logger.info(
                 f"Extraction complete: {len(segments)} segments, "
-                f"method: {method}, "
+                f"method: asr, "
                 f"processing time: {processing_time:.2f}s"
             )
-            
             return result
-        
-        except (URLValidationError, DownloadError, AudioExtractionError, ASRError):
+             
+        except DownloadError as e:
+            if artifact_dir is not None:
+                failed_info = self._archive_failure(
+                    artifact_dir=artifact_dir,
+                    video_id=video_id if 'video_id' in locals() else "unknown",
+                    title=(video_metadata or {}).get("title", video_id if 'video_id' in locals() else "unknown"),
+                    failure_stage="video_download",
+                    failure_reason=str(e),
+                    video_path=video_path,
+                    subtitle_details=subtitle_details,
+                    video_metadata=video_metadata,
+                )
+                self.logger.warning(f"视频下载失败，失败包已写入: {failed_info['bundle_dir']}")
+            raise
+        except SubtitleNotFoundError:
+            raise
+        except (URLValidationError, AudioExtractionError, ASRError) as e:
+            if artifact_dir is not None and 'video_id' in locals():
+                failed_info = self._archive_failure(
+                    artifact_dir=artifact_dir,
+                    video_id=video_id,
+                    title=(video_metadata or {}).get("title", video_id),
+                    failure_stage="asr" if force_asr else "processing",
+                    failure_reason=str(e),
+                    video_path=video_path,
+                    subtitle_details=subtitle_details,
+                    video_metadata=video_metadata,
+                )
+                self.logger.warning(f"流程失败，失败包已写入: {failed_info['bundle_dir']}")
             # Re-raise these exceptions as-is
             raise
         except Exception as e:

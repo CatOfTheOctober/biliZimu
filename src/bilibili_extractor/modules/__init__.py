@@ -6,6 +6,7 @@ __all__ = [
     "video_downloader",
     "audio_extractor",
     "asr_engine",
+    "acquisition_bundle",
     "ocr_engine",
     "output_formatter",
 ]

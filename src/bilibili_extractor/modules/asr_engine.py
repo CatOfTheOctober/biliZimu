@@ -1,7 +1,7 @@
 """ASR (Automatic Speech Recognition) engines."""
 
 from abc import ABC, abstractmethod
-from typing import List, Optional, Callable
+from typing import List, Optional, Callable, Sequence, Tuple
 from pathlib import Path
 from bilibili_extractor.core.models import TextSegment
 
@@ -59,6 +59,8 @@ class FunASREngine(ASREngine):
         self.use_int8 = use_int8
         self.use_onnx = use_onnx
         self._pipeline = None
+        self._clause_break_chars = set("，。！？；：、,.!?;:")
+        self._untimed_chars = self._clause_break_chars | set("()（）[]【】“”‘’\"' \t\r\n")
 
     def transcribe(
         self, audio_path: Path, progress_callback: Optional[Callable] = None
@@ -195,22 +197,25 @@ class FunASREngine(ASREngine):
                             source="asr"
                         ))
             
-            # 如果没有 sentence_info，尝试原有的 timestamps (词级或旧版格式)
+            # 如果没有 sentence_info，处理时间戳格式
             elif timestamps and isinstance(timestamps, list) and not segments:
-                for ts_item in timestamps:
-                    if isinstance(ts_item, (list, tuple)) and len(ts_item) >= 3:
-                        # Format: [word, start_ms, end_ms]
-                        word = ts_item[0]
-                        start_time = float(ts_item[1]) / 1000.0  # Convert ms to seconds
-                        end_time = float(ts_item[2]) / 1000.0
-                        
-                        segments.append(TextSegment(
-                            start_time=start_time,
-                            end_time=end_time,
-                            text=word,
-                            confidence=1.0,  # FunASR doesn't provide confidence scores
-                            source="asr"
-                        ))
+                if text and self._is_character_timestamp_format(timestamps):
+                    segments.extend(self._build_segments_from_char_timestamps(text, timestamps))
+                else:
+                    for ts_item in timestamps:
+                        if isinstance(ts_item, (list, tuple)) and len(ts_item) >= 3:
+                            # Format: [word, start_ms, end_ms]
+                            word = ts_item[0]
+                            start_time = float(ts_item[1]) / 1000.0  # Convert ms to seconds
+                            end_time = float(ts_item[2]) / 1000.0
+                            
+                            segments.append(TextSegment(
+                                start_time=start_time,
+                                end_time=end_time,
+                                text=word,
+                                confidence=1.0,  # FunASR doesn't provide confidence scores
+                                source="asr"
+                            ))
             
             # 最后的保底兜底逻辑
             if not segments and text:
@@ -225,6 +230,97 @@ class FunASREngine(ASREngine):
         # Sort by start_time to ensure monotonic order (Requirement 5.3)
         segments.sort(key=lambda s: s.start_time)
         
+        return segments
+
+    def _is_character_timestamp_format(self, timestamps: Sequence[Sequence]) -> bool:
+        if not timestamps:
+            return False
+        sample = timestamps[0]
+        return isinstance(sample, (list, tuple)) and len(sample) == 2
+
+    def _build_segments_from_char_timestamps(
+        self,
+        text: str,
+        timestamps: Sequence[Sequence],
+    ) -> List[TextSegment]:
+        char_entries = []
+        timestamp_index = 0
+
+        for char in text:
+            if char in self._untimed_chars:
+                char_entries.append((char, None, None))
+                continue
+
+            if timestamp_index >= len(timestamps):
+                char_entries.append((char, None, None))
+                continue
+
+            ts_item = timestamps[timestamp_index]
+            timestamp_index += 1
+
+            try:
+                start_time = float(ts_item[0]) / 1000.0
+                end_time = float(ts_item[1]) / 1000.0
+            except (TypeError, ValueError, IndexError):
+                char_entries.append((char, None, None))
+                continue
+
+            char_entries.append((char, start_time, end_time))
+
+        return self._group_char_entries_into_segments(char_entries)
+
+    def _group_char_entries_into_segments(
+        self,
+        char_entries: Sequence[Tuple[str, Optional[float], Optional[float]]],
+    ) -> List[TextSegment]:
+        segments: List[TextSegment] = []
+        current_chars: List[str] = []
+        current_timed_entries: List[Tuple[float, float]] = []
+
+        def flush_current() -> None:
+            if not current_chars:
+                return
+
+            segment_text = "".join(current_chars).strip()
+            current_chars.clear()
+
+            if not segment_text:
+                current_timed_entries.clear()
+                return
+
+            if not current_timed_entries:
+                if segments:
+                    segments[-1].text += segment_text
+                else:
+                    segments.append(TextSegment(
+                        start_time=0.0,
+                        end_time=0.0,
+                        text=segment_text,
+                        confidence=1.0,
+                        source="asr",
+                    ))
+                return
+
+            start_time = current_timed_entries[0][0]
+            end_time = current_timed_entries[-1][1]
+            current_timed_entries.clear()
+            segments.append(TextSegment(
+                start_time=start_time,
+                end_time=end_time,
+                text=segment_text,
+                confidence=1.0,
+                source="asr",
+            ))
+
+        for char, start_time, end_time in char_entries:
+            current_chars.append(char)
+            if start_time is not None and end_time is not None:
+                current_timed_entries.append((start_time, end_time))
+
+            if char in self._clause_break_chars:
+                flush_current()
+
+        flush_current()
         return segments
 
 
